@@ -16,6 +16,7 @@ import android.os.Looper;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowManager;
 import android.app.Dialog;
 import android.view.Gravity;
 import android.widget.ImageView;
