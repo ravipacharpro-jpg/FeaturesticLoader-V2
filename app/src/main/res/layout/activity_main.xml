@@ -1,426 +1,666 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_apple_screen"
-    android:fillViewport="true"
-    android:scrollbars="none">
+    android:background="#F8FAFC">
 
-    <LinearLayout
+    <!-- 1. Background Artwork -->
+    <ImageView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingLeft="20dp"
-        android:paddingTop="38dp"
-        android:paddingRight="20dp"
-        android:paddingBottom="28dp">
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/bg_soldier"
+        android:contentDescription="@null" />
 
-        <!-- Top Apple Status Bar -->
+    <!-- 2. Falling Leaves & Floating Petals Particle Layer -->
+    <com.featurestic.loader.ui.FallingLeavesView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- 3. Soft Gradient Fade Overlay to blend seamlessly -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#12FFFFFF" />
+
+    <!-- 4. Scrollable Dashboard Container -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:scrollbars="none">
+
         <LinearLayout
-            android:id="@+id/topHeaderBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:layout_width="38dp"
-                android:layout_height="38dp"
-                android:layout_marginRight="12dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/app_logo" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:letterSpacing="-0.02"
-                    android:text="Virtual Workspace"
-                    android:textColor="#F5F5F7"
-                    android:textSize="24sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvLicenseBadge"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="● Active License"
-                    android:textColor="#30D158"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/btnLogout"
-                android:layout_width="wrap_content"
-                android:layout_height="34dp"
-                android:background="@drawable/bg_apple_segment_unselected"
-                android:gravity="center"
-                android:paddingLeft="14dp"
-                android:paddingRight="14dp"
-                android:text="Sign Out"
-                android:textColor="#FF453A"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <!-- Segmented Game Region Selector (Apple Segmented Control) -->
-        <HorizontalScrollView
-            android:id="@+id/variantScrollContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:scrollbars="none">
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/pillBgmi"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:layout_marginRight="8dp"
-                    android:background="@drawable/bg_apple_segment_selected"
-                    android:gravity="center"
-                    android:paddingLeft="16dp"
-                    android:paddingRight="16dp"
-                    android:text="BGMI India"
-                    android:textColor="#FFFFFF"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/pillGlobal"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:layout_marginRight="8dp"
-                    android:background="@drawable/bg_apple_segment_unselected"
-                    android:gravity="center"
-                    android:paddingLeft="16dp"
-                    android:paddingRight="16dp"
-                    android:text="Global"
-                    android:textColor="#8E8E93"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/pillKr"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:layout_marginRight="8dp"
-                    android:background="@drawable/bg_apple_segment_unselected"
-                    android:gravity="center"
-                    android:paddingLeft="16dp"
-                    android:paddingRight="16dp"
-                    android:text="Korea"
-                    android:textColor="#8E8E93"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/pillVn"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:background="@drawable/bg_apple_segment_unselected"
-                    android:gravity="center"
-                    android:paddingLeft="16dp"
-                    android:paddingRight="16dp"
-                    android:text="Vietnam"
-                    android:textColor="#8E8E93"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-        </HorizontalScrollView>
-
-        <!-- Selected Game Hero Card -->
-        <LinearLayout
-            android:id="@+id/gameHeroCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:background="@drawable/bg_apple_glass_card"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="20dp">
-
-            <ImageView
-                android:id="@+id/ivGameIcon"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/app_logo" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="16dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/tvHostStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_apple_pill_success"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="3dp"
-                    android:paddingRight="10dp"
-                    android:paddingBottom="3dp"
-                    android:text="Installed on Device"
-                    android:textColor="#30D158"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvGameName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="Battlegrounds Mobile India"
-                    android:textColor="#F5F5F7"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvGamePackage"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:fontFamily="monospace"
-                    android:text="com.pubg.imobile"
-                    android:textColor="#8E8E93"
-                    android:textSize="12sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- Virtual Box Environment Checklist Card -->
-        <LinearLayout
-            android:id="@+id/envChecklistCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:background="@drawable/bg_apple_glass_card"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:paddingStart="18dp"
+            android:paddingEnd="18dp"
+            android:paddingTop="36dp"
+            android:paddingBottom="28dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:letterSpacing="0.04"
-                android:text="VIRTUAL CONTAINER STATUS"
-                android:textColor="#8E8E93"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-
-            <!-- Row 1: APK Clone Status -->
+            <!-- Top Header: Logo + Brand + Notification Bell Button -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <View
-                    android:id="@+id/dotCloneStatus"
-                    android:layout_width="10dp"
-                    android:layout_height="10dp"
-                    android:background="@drawable/dot_apple_amber" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="12dp"
-                    android:layout_weight="1"
-                    android:text="Virtual App Container"
-                    android:textColor="#F5F5F7"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/tvCloneStatusValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Pending Setup"
-                    android:textColor="#FF9F0A"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- Row 2: OBB Mount & Copy Status -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <View
-                    android:id="@+id/dotObbStatus"
-                    android:layout_width="10dp"
-                    android:layout_height="10dp"
-                    android:background="@drawable/dot_apple_amber" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="12dp"
-                    android:layout_weight="1"
-                    android:text="OBB Resource Pack"
-                    android:textColor="#F5F5F7"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/tvObbStatusValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Ready to Sync"
-                    android:textColor="#FF9F0A"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- Row 3: 120 FPS & Device Spoof Engine -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <View
-                    android:id="@+id/dotEngineStatus"
-                    android:layout_width="10dp"
-                    android:layout_height="10dp"
-                    android:background="@drawable/dot_apple_blue" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="12dp"
-                    android:layout_weight="1"
-                    android:text="Engine Profile"
-                    android:textColor="#F5F5F7"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/tvEngineStatusValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="120 FPS • Clean ID"
-                    android:textColor="#64D2FF"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <!-- Bottom Action Dock: Smart Single Morphing Button (Setup Game -> Start Game) -->
-        <LinearLayout
-            android:id="@+id/bottomActionDock"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:gravity="center_horizontal"
-            android:orientation="vertical">
-
-            <!-- Step progress bar shown during Setup -->
-            <ProgressBar
-                android:id="@+id/progressSetupBar"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="match_parent"
-                android:layout_height="6dp"
-                android:layout_marginBottom="8dp"
-                android:max="100"
-                android:progress="0"
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/tvSetupStepDetail"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:text="Preparing environment..."
-                android:textColor="#64D2FF"
-                android:textSize="12sp"
-                android:visibility="gone" />
-
-            <!-- THE SMART SINGLE BUTTON -->
-            <LinearLayout
-                android:id="@+id/btnSmartAction"
-                android:layout_width="match_parent"
-                android:layout_height="68dp"
-                android:background="@drawable/bg_apple_btn_setup"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center"
                 android:orientation="horizontal"
-                android:paddingLeft="20dp"
-                android:paddingRight="20dp">
+                android:gravity="center_vertical"
+                android:layout_marginBottom="16dp">
 
-                <ProgressBar
-                    android:id="@+id/progressSmartButton"
-                    style="?android:attr/progressBarStyleSmall"
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:layout_marginRight="12dp"
-                    android:indeterminate="true"
-                    android:visibility="gone" />
+                <ImageView
+                    android:id="@+id/ivDashLogo"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/app_logo"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="@null" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="BGMI CHEAT"
+                        android:textColor="#0F172A"
+                        android:textSize="17sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.04" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="PLAY BEYOND LIMITS"
+                        android:textColor="#64748B"
+                        android:textSize="8sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.12" />
+                </LinearLayout>
+
+                <!-- Notification Bell Button with Red Dot -->
+                <FrameLayout
+                    android:id="@+id/btnNotificationBell"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_circle_icon"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_bell"
+                        android:contentDescription="Notifications" />
+                </FrameLayout>
+            </LinearLayout>
+
+            <!-- Card 1: Device Info Card -->
+            <LinearLayout
+                android:id="@+id/cardDeviceInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_frosted_card"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp">
+
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_icon_squircle">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_phone_device"
+                        android:contentDescription="@null" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginEnd="8dp">
+
+                    <TextView
+                        android:id="@+id/tvDeviceModel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="samsung SM-M315F"
+                        android:textColor="#0F172A"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvDeviceCodename"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="(m31)"
+                        android:textColor="#64748B"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvDeviceSpecs"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Android 12 · arm64-v8a"
+                        android:textColor="#64748B"
+                        android:textSize="12sp"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/pillConnectedStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:background="@drawable/bg_status_capsule"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
+
+                    <TextView
+                        android:id="@+id/tvConnectedStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🟢 Connected →"
+                        android:textColor="#15803D"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Card 2: Game Target & Launch Card -->
+            <LinearLayout
+                android:id="@+id/cardGameTarget"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_frosted_card"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp">
+
+                <!-- Top Row: Icon + Game Details + 3-dots Menu -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="2dp">
+
+                        <ImageView
+                            android:id="@+id/ivGameIcon"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:src="@drawable/app_logo"
+                            android:scaleType="centerCrop"
+                            android:contentDescription="Game Icon" />
+                    </androidx.cardview.widget.CardView>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="14dp"
+                        android:layout_marginEnd="8dp">
+
+                        <TextView
+                            android:id="@+id/tvGameName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Battlegrounds India"
+                            android:textColor="#0F172A"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvGamePackage"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Package : com.pubg.imobile"
+                            android:textColor="#64748B"
+                            android:textSize="12sp"
+                            android:layout_marginTop="2dp" />
+
+                        <TextView
+                            android:id="@+id/tvGameVersion"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Version : 4.6.0"
+                            android:textColor="#0F172A"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="2dp" />
+
+                        <TextView
+                            android:id="@+id/tvGameSupported"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Supported : 4.6.0"
+                            android:textColor="#94A3B8"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:id="@+id/btnGameMenu"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:padding="4dp"
+                        android:src="@drawable/ic_more_vert"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Options" />
+                </LinearLayout>
+
+                <!-- Full Width Black LAUNCH GAME Button -->
+                <FrameLayout
+                    android:id="@+id/btnLaunchGame"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:background="@drawable/bg_btn_black"
+                    android:layout_marginTop="16dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <LinearLayout
+                        android:id="@+id/btnLaunchContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:src="@drawable/ic_gamepad"
+                            android:contentDescription="@null"
+                            android:layout_marginEnd="12dp" />
+
+                        <TextView
+                            android:id="@+id/tvLaunchLabel"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="LAUNCH GAME"
+                            android:textColor="#FFFFFF"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.04" />
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_arrow_right"
+                            app:tint="#FFFFFF"
+                            android:contentDescription="@null" />
+                    </LinearLayout>
+
+                    <ProgressBar
+                        android:id="@+id/pbLaunchProgress"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:indeterminateTint="#FFFFFF"
+                        android:visibility="gone" />
+                </FrameLayout>
+            </LinearLayout>
+
+            <!-- Card 3: Hide ESP Card (From Live Demo Video) -->
+            <LinearLayout
+                android:id="@+id/cardHideEsp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_frosted_card"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp">
+
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_icon_squircle">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_hide_esp"
+                        android:contentDescription="@null" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="14dp"
+                    android:layout_marginEnd="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Hide ESP"
+                        android:textColor="#0F172A"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Can Be Used To Hide Esp From Recording"
+                        android:textColor="#64748B"
+                        android:textSize="12sp"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switchHideEsp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false" />
+            </LinearLayout>
+
+            <!-- Card 4: Subscription / License Validity Card -->
+            <LinearLayout
+                android:id="@+id/cardSubscription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_frosted_card"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="14dp">
+
+                    <FrameLayout
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_squircle">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_subscription"
+                            android:contentDescription="@null" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginStart="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Subscription"
+                            android:textColor="#0F172A"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="License validity"
+                            android:textColor="#64748B"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- 4-Box Countdown Timer Grid -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                    <!-- Box 1: DAYS -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="72dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_timer_box"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:layout_marginEnd="6dp">
+
+                        <TextView
+                            android:id="@+id/tvCountdownDays"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="48"
+                            android:textColor="#0F172A"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="DAYS"
+                            android:textColor="#64748B"
+                            android:textSize="9sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.05"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+
+                    <!-- Box 2: HOURS -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="72dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_timer_box"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:layout_marginEnd="6dp">
+
+                        <TextView
+                            android:id="@+id/tvCountdownHours"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="09"
+                            android:textColor="#0F172A"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="HOURS"
+                            android:textColor="#64748B"
+                            android:textSize="9sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.05"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+
+                    <!-- Box 3: MINUTES -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="72dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_timer_box"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:layout_marginEnd="6dp">
+
+                        <TextView
+                            android:id="@+id/tvCountdownMinutes"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="46"
+                            android:textColor="#0F172A"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="MINUTES"
+                            android:textColor="#64748B"
+                            android:textSize="9sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.05"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+
+                    <!-- Box 4: SECONDS -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="72dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_timer_box"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <TextView
+                            android:id="@+id/tvCountdownSeconds"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="38"
+                            android:textColor="#0F172A"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="SECONDS"
+                            android:textColor="#64748B"
+                            android:textSize="9sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.05"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Pill: Installed Version -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_gravity="center_horizontal"
+                android:background="@drawable/bg_timer_box"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:layout_marginBottom="12dp">
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/ic_apple_cube"
+                    android:layout_marginEnd="6dp" />
+
+                <TextView
+                    android:id="@+id/tvInstalledTag"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Installed : 1.0 (7bb6ff52) ›"
+                    android:textColor="#64748B"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Card 5: SDK ACTIVATED Card (From Video) -->
+            <LinearLayout
+                android:id="@+id/cardSdkActivated"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_frosted_card"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp"
+                android:layout_marginBottom="14dp">
+
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_icon_squircle">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_shield_check"
+                        android:contentDescription="@null" />
+                </FrameLayout>
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:layout_marginStart="14dp">
 
                     <TextView
-                        android:id="@+id/tvSmartButtonTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-medium"
-                        android:text="Setup Game"
-                        android:textColor="#FFFFFF"
-                        android:textSize="18sp"
+                        android:text="SDK ACTIVATED"
+                        android:textColor="#0F172A"
+                        android:textSize="15sp"
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/tvSmartButtonSubtitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Clone APK &amp; sync OBB into Virtual Box"
-                        android:textColor="#D9FFFFFF"
-                        android:textSize="12sp" />
+                        android:text="SDK Active"
+                        android:textColor="#16A34A"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Secondary Re-sync OBB Pill (appears after Setup is completed) -->
-            <TextView
-                android:id="@+id/btnResyncObb"
-                android:layout_width="wrap_content"
-                android:layout_height="34dp"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/bg_apple_segment_unselected"
-                android:gravity="center"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp"
-                android:text="↻ Re-Sync OBB &amp; Repair Container"
-                android:textColor="#8E8E93"
-                android:textSize="12sp"
-                android:visibility="gone" />
-        </LinearLayout>
+            <!-- Footer: Copyright & Version -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:layout_marginTop="4dp">
 
-    </LinearLayout>
-</ScrollView>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Copyright @2025 - BGMI CHEAT"
+                    android:textColor="#64748B"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Loader (v1.0.4)"
+                    android:textColor="#94A3B8"
+                    android:textSize="10sp"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+</FrameLayout>

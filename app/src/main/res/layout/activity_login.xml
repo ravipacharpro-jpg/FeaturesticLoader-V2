@@ -1,211 +1,310 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_apple_screen"
-    android:fillViewport="true"
-    android:scrollbars="none">
+    android:background="#F8FAFC">
 
+    <!-- 1. Background Soldier Artwork -->
+    <ImageView
+        android:id="@+id/ivBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/bg_soldier"
+        android:contentDescription="@null" />
+
+    <!-- 2. Falling Leaves & Floating Petals Particle Layer -->
+    <com.featurestic.loader.ui.FallingLeavesView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- 3. Soft Gradient Fade Overlay to blend seamlessly -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#15FFFFFF" />
+
+    <!-- 3. Foreground Content Layout -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:paddingLeft="24dp"
-        android:paddingTop="44dp"
-        android:paddingRight="24dp"
-        android:paddingBottom="32dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <!-- Hero Apple Identity Header -->
+        <!-- Top Header: Logo + Brand Name -->
         <LinearLayout
-            android:id="@+id/heroHeader"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:orientation="vertical">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingTop="36dp"
+            android:paddingBottom="12dp">
 
             <ImageView
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/app_logo" />
+                android:id="@+id/ivHeaderLogo"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/app_logo"
+                android:scaleType="centerCrop"
+                android:contentDescription="@null" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/bg_apple_pill_info"
-                android:paddingLeft="14dp"
-                android:paddingTop="5dp"
-                android:paddingRight="14dp"
-                android:paddingBottom="5dp"
-                android:text="VIRTUAL ENGINE • ANDROID 10–16"
-                android:textColor="#64D2FF"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:fontFamily="sans-serif-medium"
-                android:letterSpacing="-0.02"
-                android:text="Featurestic Box"
-                android:textColor="#F5F5F7"
-                android:textSize="30sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:gravity="center"
-                android:text="Sign in with your PHP panel license key to unlock the virtual container."
-                android:textColor="#8E8E93"
-                android:textSize="14sp" />
-        </LinearLayout>
-
-        <!-- Frosted Glass Login Card -->
-        <LinearLayout
-            android:id="@+id/loginGlassCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:background="@drawable/bg_apple_glass_card"
-            android:orientation="vertical"
-            android:padding="22dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:letterSpacing="0.04"
-                android:text="LICENSE KEY"
-                android:textColor="#8E8E93"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-
-            <!-- Key Input Box with Inline Paste Pill -->
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="54dp"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/bg_apple_input_field"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingLeft="16dp"
-                android:paddingRight="10dp">
-
-                <EditText
-                    android:id="@+id/etLicenseKey"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:background="@null"
-                    android:hint="Enter or paste license key..."
-                    android:imeOptions="actionDone"
-                    android:inputType="textVisiblePassword|textNoSuggestions"
-                    android:singleLine="true"
-                    android:textColor="#F5F5F7"
-                    android:textColorHint="#565E6D"
-                    android:textSize="15sp" />
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginStart="12dp">
 
                 <TextView
-                    android:id="@+id/btnPasteKey"
-                    android:layout_width="wrap_content"
-                    android:layout_height="34dp"
-                    android:background="@drawable/bg_apple_segment_unselected"
-                    android:gravity="center"
-                    android:paddingLeft="14dp"
-                    android:paddingRight="14dp"
-                    android:text="Paste"
-                    android:textColor="#64D2FF"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- Status Pill Banner -->
-            <TextView
-                android:id="@+id/tvStatusBanner"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:background="@drawable/bg_apple_pill_info"
-                android:gravity="center"
-                android:paddingLeft="14dp"
-                android:paddingTop="8dp"
-                android:paddingRight="14dp"
-                android:paddingBottom="8dp"
-                android:text="Ready to authenticate"
-                android:textColor="#64D2FF"
-                android:textSize="12sp"
-                android:visibility="gone" />
-
-            <!-- Primary Apple Blue Sign-In Button -->
-            <LinearLayout
-                android:id="@+id/btnSignInContainer"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="18dp"
-                android:background="@drawable/bg_apple_btn_primary"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center"
-                android:orientation="horizontal">
-
-                <ProgressBar
-                    android:id="@+id/progressSignIn"
-                     style="?android:attr/progressBarStyleSmall"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_marginRight="10dp"
-                    android:indeterminate="true"
-                    android:visibility="gone" />
-
-                <TextView
-                    android:id="@+id/tvSignInLabel"
+                    android:id="@+id/tvHeaderTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="Continue to Virtual Box"
-                    android:textColor="#FFFFFF"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
+                    android:text="BGMI CHEAT"
+                    android:textColor="#0F172A"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04" />
 
-            <!-- HWID & Encryption Footnote -->
+                <TextView
+                    android:id="@+id/tvHeaderTagline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="PLAY BEYOND LIMITS"
+                    android:textColor="#64748B"
+                    android:textSize="8sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.12" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Center Hero: Square Icon + Welcome Headline -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="top|start"
+            android:paddingStart="28dp"
+            android:paddingEnd="28dp"
+            android:paddingTop="20dp">
+
+            <androidx.cardview.widget.CardView
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="3dp"
+                android:layout_marginBottom="18dp">
+
+                <ImageView
+                    android:id="@+id/ivHeroLogo"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/app_logo"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="@null" />
+            </androidx.cardview.widget.CardView>
+
             <TextView
-                android:id="@+id/tvHwidBadge"
+                android:id="@+id/tvHeroTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="16dp"
-                android:fontFamily="monospace"
-                android:text="HWID • DETECTING"
-                android:textColor="#636366"
-                android:textSize="11sp" />
-        </LinearLayout>
-
-        <!-- Bottom Support & Get Key Pill -->
-        <LinearLayout
-            android:id="@+id/footerContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
-            android:gravity="center"
-            android:orientation="vertical">
+                android:text="BGMI CHEAT"
+                android:textColor="#0F172A"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.02" />
 
             <TextView
-                android:id="@+id/btnGetKeySupport"
+                android:id="@+id/tvHeroSubtitle"
                 android:layout_width="wrap_content"
-                android:layout_height="38dp"
-                android:background="@drawable/bg_apple_segment_unselected"
-                android:gravity="center"
-                android:paddingLeft="18dp"
-                android:paddingRight="18dp"
-                android:text="Need a License Key? Contact Support →"
-                android:textColor="#8E8E93"
-                android:textSize="12sp" />
+                android:layout_height="wrap_content"
+                android:text="Welcome back! Please authenticate to\ncontinue."
+                android:textColor="#475569"
+                android:textSize="14sp"
+                android:lineSpacingExtra="4dp"
+                android:layout_marginTop="6dp" />
         </LinearLayout>
 
+        <!-- 4. Frosted Glass Bottom Sheet Container -->
+        <LinearLayout
+            android:id="@+id/bottomSheetCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_frosted_bottom_sheet"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:paddingStart="22dp"
+            android:paddingEnd="22dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="24dp">
+
+            <!-- Sheet Handle Bar -->
+            <View
+                android:layout_width="44dp"
+                android:layout_height="4dp"
+                android:background="#CBD5E1"
+                android:layout_marginBottom="18dp" />
+
+            <!-- Password / Key Input Card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="62dp"
+                android:background="@drawable/bg_input_pill"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp">
+
+                <!-- Lock Icon -->
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_lock"
+                    android:contentDescription="@null" />
+
+                <!-- Input Text Column -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="14dp"
+                    android:layout_marginEnd="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Password"
+                        android:textColor="#64748B"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/etLicenseKey"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@null"
+                        android:hint="Enter Key"
+                        android:textColorHint="#94A3B8"
+                        android:textColor="#0F172A"
+                        android:textSize="14sp"
+                        android:inputType="textPassword"
+                        android:singleLine="true"
+                        android:padding="0dp"
+                        android:textCursorDrawable="@null" />
+                </LinearLayout>
+
+                <!-- Paste from Clipboard Button -->
+                <ImageView
+                    android:id="@+id/btnPasteKey"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_paste"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Paste"
+                    android:layout_marginEnd="6dp" />
+
+                <!-- Toggle Password Visibility Button -->
+                <ImageView
+                    android:id="@+id/btnTogglePassword"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:padding="3dp"
+                    android:src="@drawable/ic_eye"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Toggle Visibility" />
+            </LinearLayout>
+
+            <!-- Permissions Capsule Status Pill -->
+            <LinearLayout
+                android:id="@+id/pillPermissions"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:background="@drawable/bg_status_capsule"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:layout_marginTop="14dp"
+                android:layout_marginBottom="14dp">
+
+                <TextView
+                    android:id="@+id/tvPermissionsStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="FILES: ON  •  INSTALL: ON  •  OVERLAY: ON"
+                    android:textColor="#15803D"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04" />
+            </LinearLayout>
+
+            <!-- Large "Log In" Pill Button with Helmet Icon -->
+            <FrameLayout
+                android:id="@+id/btnLogin"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:background="@drawable/bg_btn_black"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:id="@+id/btnLoginContent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_helmet"
+                        android:contentDescription="@null"
+                        android:layout_marginEnd="12dp" />
+
+                    <TextView
+                        android:id="@+id/tvLoginBtnText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Log In"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.03" />
+                </LinearLayout>
+
+                <ProgressBar
+                    android:id="@+id/pbLoginLoading"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:layout_gravity="center"
+                    android:indeterminateTint="#FFFFFF"
+                    android:visibility="gone" />
+            </FrameLayout>
+
+            <!-- Copyright & Version Footer -->
+            <TextView
+                android:id="@+id/tvCopyright"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Copyright @2025 - BGMI CHEAT"
+                android:textColor="#64748B"
+                android:textSize="11sp"
+                android:layout_marginTop="16dp" />
+
+            <TextView
+                android:id="@+id/tvVersion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Loader (v1.0.4)"
+                android:textColor="#94A3B8"
+                android:textSize="10sp"
+                android:layout_marginTop="2dp" />
+
+        </LinearLayout>
     </LinearLayout>
-</ScrollView>
+
+</FrameLayout>

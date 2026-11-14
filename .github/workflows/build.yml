@@ -30,7 +30,6 @@ jobs:
               src = 'app/src/main/res/drawable/app_logo.jpg'
               if os.path.exists(src):
                   im = Image.open(src)
-                  os.remove(src)
                   im.save('app/src/main/res/drawable/app_logo.png')
                   densities = {'mipmap-mdpi': 48, 'mipmap-hdpi': 72, 'mipmap-xhdpi': 96, 'mipmap-xxhdpi': 144, 'mipmap-xxxhdpi': 192}
                   for folder, sz in densities.items():
@@ -51,7 +50,7 @@ jobs:
       - name: Upload Built APKs
         uses: actions/upload-artifact@v4
         with:
-          name: FeaturesticLoader-APK
+          name: FeaturesticLoader-V2-APK
           path: |
             **/app/build/outputs/apk/debug/*.apk
             **/app/build/outputs/apk/release/*.apk

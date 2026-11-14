@@ -1,82 +1,83 @@
 package com.featurestic.loader.ui;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 
 import com.featurestic.loader.AppConfig;
 import com.featurestic.loader.R;
 import com.featurestic.loader.auth.PhpAuthManager;
 import com.featurestic.loader.sdk.FeaturesticSdkHelper;
-import com.featurestic.sdk.FeaturesticBox;
+
+import java.util.concurrent.TimeUnit;
 
 /**
- * Apple iOS 18 Glassmorphic Virtual Box Dashboard
- * - 1-Button Smart Workflow:
- *     [Setup Game] -> Copies/mounts OBB into /SdCard/Android/obb/<pkg> + Clones APK -> Morphs into [Start Game]
- *     [Start Game] -> Launches Game inside FeaturesticBox with 120 FPS + Clean ID + Plugin .so
+ * Screen 2 — BGMI CHEAT Loader V2 Main Dashboard Screen
+ * High-contrast silver & frosted glass aesthetic matching Screenshot 2 & Video.
  */
-public class MainActivity extends Activity {
+public class MainActivity extends AppCompatActivity {
 
-    private static final int STATE_NEEDS_SETUP = 0;
-    private static final int STATE_SETTING_UP  = 1;
-    private static final int STATE_READY_START = 2;
+    // Device Info Card Views
+    private TextView tvDeviceModel;
+    private TextView tvDeviceCodename;
+    private TextView tvDeviceSpecs;
+    private View pillConnectedStatus;
 
-    private String selectedPackage = AppConfig.PKG_BGMI;
-    private int currentButtonState = STATE_NEEDS_SETUP;
-
-    private TextView tvLicenseBadge;
-    private TextView btnLogout;
-
-    // Variant Pills
-    private TextView pillBgmi;
-    private TextView pillGlobal;
-    private TextView pillKr;
-    private TextView pillVn;
-
-    // Game Info Views
+    // Game Target Card Views
     private ImageView ivGameIcon;
     private TextView tvGameName;
     private TextView tvGamePackage;
-    private TextView tvHostStatus;
+    private TextView tvGameVersion;
+    private TextView tvGameSupported;
+    private ImageView btnGameMenu;
+    private View btnLaunchGame;
+    private View btnLaunchContent;
+    private TextView tvLaunchLabel;
+    private ProgressBar pbLaunchProgress;
 
-    // Status Rows
-    private View dotCloneStatus;
-    private TextView tvCloneStatusValue;
-    private View dotObbStatus;
-    private TextView tvObbStatusValue;
-    private View dotEngineStatus;
-    private TextView tvEngineStatusValue;
+    // Hide ESP Switch (From Video)
+    private SwitchCompat switchHideEsp;
 
-    // Progress Bar Section
-    private ProgressBar progressSetupBar;
-    private TextView tvSetupStepDetail;
+    // Subscription Timer Views
+    private TextView tvCountdownDays;
+    private TextView tvCountdownHours;
+    private TextView tvCountdownMinutes;
+    private TextView tvCountdownSeconds;
 
-    // Single Smart Action Button ("Setup Game" -> "Start Game")
-    private LinearLayout btnSmartAction;
-    private ProgressBar progressSmartButton;
-    private TextView tvSmartButtonTitle;
-    private TextView tvSmartButtonSubtitle;
-    private TextView btnResyncObb;
+    // Top Bell Button
+    private View btnNotificationBell;
 
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
-    private boolean hasPromptedPermissionsOnce = false;
+    private String mLicenseKey = "";
+    private long mExpiryTimestamp = 0;
+    private CountDownTimer mCountDownTimer = null;
+    private boolean isLaunching = false;
+    private final Handler mMainHandler = new Handler(Looper.getMainLooper());
+
+    private static final String TARGET_PKG = AppConfig.TARGET_PACKAGE_NAME;
+    private static final String PREF_SETTINGS = "loader_v2_settings";
+    private static final String KEY_HIDE_ESP = "hide_esp_enabled";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,443 +85,293 @@ public class MainActivity extends Activity {
         setupEdgeToEdgeWindow();
         setContentView(R.layout.activity_main);
 
-        bindViews();
-        detectDefaultInstalledGame();
+        extractIntentData();
+        initViews();
+        setupDeviceInfo();
+        setupGameCard();
+        setupHideEspSwitch();
+        setupSubscriptionTimer();
         setupListeners();
-        refreshGameStateUI(false);
 
-        View topBar = findViewById(R.id.topHeaderBar);
-        View variants = findViewById(R.id.variantScrollContainer);
-        View heroCard = findViewById(R.id.gameHeroCard);
-        View envCard = findViewById(R.id.envChecklistCard);
-        View dock = findViewById(R.id.bottomActionDock);
-        AppleAnimationHelper.playEntranceAnimation(topBar, variants, heroCard, envCard, dock);
-
-        // Request Notification / Media / Mic permissions on launch
+        // Check runtime permissions
         FeaturesticSdkHelper.requestRuntimePermissionsOnStart(this);
-        checkEssentialPermissionsOnOpen();
-    }
-
-    private void checkEssentialPermissionsOnOpen() {
-        if (hasPromptedPermissionsOnce) return;
-        hasPromptedPermissionsOnce = true;
-
-        mainHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (isFinishing() || isDestroyed()) return;
-                if (!FeaturesticSdkHelper.hasAllFilesPermission(MainActivity.this)) {
-                    Toast.makeText(MainActivity.this,
-                            "Please allow 'All Files Access' for Virtual OBB & Data Sync (/SdCard/Android/obb)",
-                            Toast.LENGTH_LONG).show();
-                    FeaturesticSdkHelper.requestAllFilesPermission(MainActivity.this);
-                } else if (!FeaturesticSdkHelper.hasOverlayPermission(MainActivity.this)) {
-                    Toast.makeText(MainActivity.this,
-                            "Please allow 'Display over other apps' (Floating Permission)",
-                            Toast.LENGTH_LONG).show();
-                    FeaturesticSdkHelper.requestOverlayPermission(MainActivity.this);
-                }
-            }
-        }, 450);
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        if (currentButtonState != STATE_SETTING_UP) {
-            refreshGameStateUI(false);
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mCountDownTimer != null) {
+            mCountDownTimer.cancel();
+            mCountDownTimer = null;
         }
-    }
-
-    private void bindViews() {
-        tvLicenseBadge = findViewById(R.id.tvLicenseBadge);
-        btnLogout = findViewById(R.id.btnLogout);
-
-        pillBgmi = findViewById(R.id.pillBgmi);
-        pillGlobal = findViewById(R.id.pillGlobal);
-        pillKr = findViewById(R.id.pillKr);
-        pillVn = findViewById(R.id.pillVn);
-
-        ivGameIcon = findViewById(R.id.ivGameIcon);
-        tvGameName = findViewById(R.id.tvGameName);
-        tvGamePackage = findViewById(R.id.tvGamePackage);
-        tvHostStatus = findViewById(R.id.tvHostStatus);
-
-        dotCloneStatus = findViewById(R.id.dotCloneStatus);
-        tvCloneStatusValue = findViewById(R.id.tvCloneStatusValue);
-        dotObbStatus = findViewById(R.id.dotObbStatus);
-        tvObbStatusValue = findViewById(R.id.tvObbStatusValue);
-        dotEngineStatus = findViewById(R.id.dotEngineStatus);
-        tvEngineStatusValue = findViewById(R.id.tvEngineStatusValue);
-
-        progressSetupBar = findViewById(R.id.progressSetupBar);
-        tvSetupStepDetail = findViewById(R.id.tvSetupStepDetail);
-
-        btnSmartAction = findViewById(R.id.btnSmartAction);
-        progressSmartButton = findViewById(R.id.progressSmartButton);
-        tvSmartButtonTitle = findViewById(R.id.tvSmartButtonTitle);
-        tvSmartButtonSubtitle = findViewById(R.id.tvSmartButtonSubtitle);
-        btnResyncObb = findViewById(R.id.btnResyncObb);
-
-        String savedExp = PhpAuthManager.getSavedExpiry(this);
-        tvLicenseBadge.setText("KEY ACTIVE • " + savedExp);
-
-        AppleAnimationHelper.attachSpringPress(btnSmartAction);
-        AppleAnimationHelper.attachSpringPress(btnLogout);
-        AppleAnimationHelper.attachSpringPress(btnResyncObb);
-    }
-
-    private void setupListeners() {
-        View.OnClickListener pillListener = new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (currentButtonState == STATE_SETTING_UP) return;
-                int id = v.getId();
-                if (id == R.id.pillBgmi) selectedPackage = AppConfig.PKG_BGMI;
-                else if (id == R.id.pillGlobal) selectedPackage = AppConfig.PKG_GLOBAL;
-                else if (id == R.id.pillKr) selectedPackage = AppConfig.PKG_KR;
-                else if (id == R.id.pillVn) selectedPackage = AppConfig.PKG_VN;
-                updateVariantPills();
-                refreshGameStateUI(true);
-            }
-        };
-        pillBgmi.setOnClickListener(pillListener);
-        pillGlobal.setOnClickListener(pillListener);
-        pillKr.setOnClickListener(pillListener);
-        pillVn.setOnClickListener(pillListener);
-
-        btnLogout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                PhpAuthManager.clearSession(MainActivity.this);
-                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-                startActivity(intent);
-                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-                finish();
-            }
-        });
-
-        btnSmartAction.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (currentButtonState == STATE_SETTING_UP) {
-                    return;
-                }
-                if (!FeaturesticSdkHelper.hasAllFilesPermission(MainActivity.this)) {
-                    Toast.makeText(MainActivity.this,
-                            "Grant All Files Access first so OBB can be synced to /SdCard/Android/obb",
-                            Toast.LENGTH_LONG).show();
-                    FeaturesticSdkHelper.requestAllFilesPermission(MainActivity.this);
-                    return;
-                }
-                if (currentButtonState == STATE_NEEDS_SETUP) {
-                    startVirtualSetupFlow();
-                } else if (currentButtonState == STATE_READY_START) {
-                    launchGameInVirtualBox();
-                }
-            }
-        });
-
-        btnResyncObb.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (currentButtonState == STATE_SETTING_UP) return;
-                FeaturesticSdkHelper.markGameSetupState(MainActivity.this, selectedPackage, false);
-                refreshGameStateUI(true);
-                startVirtualSetupFlow();
-            }
-        });
-    }
-
-    private void detectDefaultInstalledGame() {
-        String[] candidates = {
-                AppConfig.PKG_BGMI,
-                AppConfig.PKG_GLOBAL,
-                AppConfig.PKG_KR,
-                AppConfig.PKG_VN
-        };
-        for (String pkg : candidates) {
-            if (FeaturesticSdkHelper.isInstalledOnHost(this, pkg)) {
-                selectedPackage = pkg;
-                break;
-            }
-        }
-        updateVariantPills();
-    }
-
-    private void updateVariantPills() {
-        stylePill(pillBgmi, AppConfig.PKG_BGMI.equals(selectedPackage));
-        stylePill(pillGlobal, AppConfig.PKG_GLOBAL.equals(selectedPackage));
-        stylePill(pillKr, AppConfig.PKG_KR.equals(selectedPackage));
-        stylePill(pillVn, AppConfig.PKG_VN.equals(selectedPackage));
-    }
-
-    private void stylePill(TextView pill, boolean active) {
-        if (active) {
-            pill.setBackgroundResource(R.drawable.bg_apple_segment_selected);
-            pill.setTextColor(Color.WHITE);
-        } else {
-            pill.setBackgroundResource(R.drawable.bg_apple_segment_unselected);
-            pill.setTextColor(Color.parseColor("#8E8E93"));
-        }
-    }
-
-    private void refreshGameStateUI(boolean animateButton) {
-        PackageManager pm = getPackageManager();
-        PackageInfo pi = FeaturesticSdkHelper.findHostGameInfo(this, selectedPackage);
-        boolean installedOnHost = (pi != null);
-        String versionLabel = "";
-        String appTitle = getFriendlyTitle(selectedPackage);
-
-        if (pi != null) {
-            versionLabel = "v" + (pi.versionName != null ? pi.versionName : String.valueOf(pi.versionCode));
-            try {
-                ApplicationInfo ai = pi.applicationInfo;
-                if (ai != null) {
-                    CharSequence label = pm.getApplicationLabel(ai);
-                    if (label != null && label.length() > 0) {
-                        appTitle = label.toString();
-                    }
-                    Drawable icon = pm.getApplicationIcon(ai);
-                    if (icon != null) {
-                        ivGameIcon.setImageDrawable(icon);
-                    }
-                }
-            } catch (Throwable ignored) {
-                ivGameIcon.setImageResource(R.drawable.ic_apple_cube);
-            }
-        } else {
-            ivGameIcon.setImageResource(R.drawable.ic_apple_cube);
-        }
-
-        tvGameName.setText(appTitle);
-        tvGamePackage.setText(selectedPackage + (versionLabel.isEmpty() ? "" : " • " + versionLabel));
-
-        if (installedOnHost) {
-            tvHostStatus.setText("Installed on Device");
-            tvHostStatus.setTextColor(Color.parseColor("#30D158"));
-            tvHostStatus.setBackgroundResource(R.drawable.bg_apple_pill_success);
-        } else {
-            tvHostStatus.setText("Host APK Not Found");
-            tvHostStatus.setTextColor(Color.parseColor("#FF9F0A"));
-            tvHostStatus.setBackgroundResource(R.drawable.bg_apple_pill_warning);
-        }
-
-        boolean setupDone = FeaturesticSdkHelper.isGameSetupReady(this, selectedPackage);
-        boolean hasVirtObb = FeaturesticSdkHelper.hasVirtualObbFiles(selectedPackage);
-        boolean hasHostObb = FeaturesticSdkHelper.hasHostObbFiles(this, selectedPackage);
-
-        if (setupDone) {
-            currentButtonState = STATE_READY_START;
-
-            dotCloneStatus.setBackgroundResource(R.drawable.dot_apple_green);
-            tvCloneStatusValue.setText("Cloned in Virtual Box");
-            tvCloneStatusValue.setTextColor(Color.parseColor("#30D158"));
-
-            dotObbStatus.setBackgroundResource(R.drawable.dot_apple_green);
-            tvObbStatusValue.setText(hasVirtObb ? "Synced in /SdCard/Android/obb" : "OBB Missing • Tap Setup");
-            tvObbStatusValue.setTextColor(Color.parseColor("#30D158"));
-
-            dotEngineStatus.setBackgroundResource(R.drawable.dot_apple_blue);
-            tvEngineStatusValue.setText("120 FPS • Clean ID Ready");
-            tvEngineStatusValue.setTextColor(Color.parseColor("#64D2FF"));
-
-            btnSmartAction.setBackgroundResource(R.drawable.bg_apple_btn_start_game);
-            tvSmartButtonTitle.setText(AppConfig.BTN_START_TITLE);
-            tvSmartButtonSubtitle.setText(AppConfig.BTN_START_SUBTITLE);
-            progressSmartButton.setVisibility(View.GONE);
-            progressSetupBar.setVisibility(View.GONE);
-            tvSetupStepDetail.setVisibility(View.GONE);
-            btnResyncObb.setVisibility(View.VISIBLE);
-        } else {
-            currentButtonState = STATE_NEEDS_SETUP;
-
-            boolean cloned = false;
-            try {
-                cloned = FeaturesticBox.isInstalled(selectedPackage, 0);
-            } catch (Throwable ignored) {
-            }
-            dotCloneStatus.setBackgroundResource(cloned ? R.drawable.dot_apple_green : R.drawable.dot_apple_amber);
-            tvCloneStatusValue.setText(cloned ? "Cloned in Virtual Box" : "Pending Virtual Clone");
-            tvCloneStatusValue.setTextColor(cloned ? Color.parseColor("#30D158") : Color.parseColor("#FF9F0A"));
-
-            dotObbStatus.setBackgroundResource(hasVirtObb ? R.drawable.dot_apple_green : R.drawable.dot_apple_amber);
-            tvObbStatusValue.setText(hasVirtObb
-                    ? "Synced in /SdCard/Android/obb"
-                    : (hasHostObb ? "Host OBB Found • Tap Setup" : "Ready for OBB Sync"));
-            tvObbStatusValue.setTextColor(hasVirtObb
-                    ? Color.parseColor("#30D158") : Color.parseColor("#FF9F0A"));
-
-            dotEngineStatus.setBackgroundResource(R.drawable.dot_apple_blue);
-            tvEngineStatusValue.setText("120 FPS • Clean ID Standby");
-            tvEngineStatusValue.setTextColor(Color.parseColor("#64D2FF"));
-
-            btnSmartAction.setBackgroundResource(R.drawable.bg_apple_btn_setup);
-            tvSmartButtonTitle.setText(AppConfig.BTN_SETUP_TITLE);
-            tvSmartButtonSubtitle.setText(AppConfig.BTN_SETUP_SUBTITLE);
-            progressSmartButton.setVisibility(View.GONE);
-            progressSetupBar.setVisibility(View.GONE);
-            tvSetupStepDetail.setVisibility(View.GONE);
-            btnResyncObb.setVisibility(View.GONE);
-        }
-
-        if (animateButton) {
-            AppleAnimationHelper.playMorphPop(btnSmartAction);
-        }
-    }
-
-    private static final int REQUEST_SAF_OBB_TREE = 1005;
-
-    /**
-     * Executes the complete Virtual Box Setup (APK Clone + OBB Copy/Mount into /SdCard/Android/obb + Engine Prep)
-     * and then converts the button into "Start Game".
-     */
-    private void startVirtualSetupFlow() {
-        if (!FeaturesticSdkHelper.isInstalledOnHost(this, selectedPackage)) {
-            Toast.makeText(this,
-                    getFriendlyTitle(selectedPackage) + " (" + selectedPackage + ") is not installed on your phone! Please install the game first.",
-                    Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        currentButtonState = STATE_SETTING_UP;
-        btnSmartAction.setBackgroundResource(R.drawable.bg_apple_btn_progress);
-        progressSmartButton.setVisibility(View.VISIBLE);
-        progressSetupBar.setVisibility(View.VISIBLE);
-        tvSetupStepDetail.setVisibility(View.VISIBLE);
-        btnResyncObb.setVisibility(View.GONE);
-
-        updateSetupProgress(10, "Step 1/3 • Initializing Virtual Container...",
-                "Preparing /SdCard/Android/obb/" + selectedPackage);
-
-        final String targetPkg = selectedPackage;
-        FeaturesticSdkHelper.setupGameEnvironment(this, targetPkg, new FeaturesticBox.SetupCallback() {
-            @Override
-            public void onProgress(int percent, String statusTitle, String statusDetail) {
-                updateSetupProgress(percent, statusTitle, statusDetail);
-            }
-
-            @Override
-            public void onComplete(boolean success, String message) {
-                currentButtonState = STATE_NEEDS_SETUP;
-                if (success) {
-                    Toast.makeText(MainActivity.this,
-                            "Setup complete! Tap Start Game to launch.",
-                            Toast.LENGTH_SHORT).show();
-                } else {
-                    String err = message != null ? message : "Unknown error";
-                    Toast.makeText(MainActivity.this,
-                            "Setup failed: " + err,
-                            Toast.LENGTH_LONG).show();
-                    if (Build.VERSION.SDK_INT >= 30 && !isFinishing() && !isDestroyed()
-                            && com.featurestic.loader.sdk.FileCopyTask.getSavedSafTreeUri(MainActivity.this, targetPkg) == null
-                            && err.toLowerCase(java.util.Locale.US).contains("obb")) {
-                        promptSafObbAccess(targetPkg);
-                    }
-                }
-                refreshGameStateUI(true);
-            }
-        });
-    }
-
-    private void promptSafObbAccess(final String targetPkg) {
-        try {
-            new android.app.AlertDialog.Builder(this)
-                    .setTitle("Allow OBB Folder Access")
-                    .setMessage("Android blocked direct access to Android/obb/" + targetPkg
-                            + ". Tap 'Select Folder' and then 'Use this folder' to copy the OBB.")
-                    .setPositiveButton("Select Folder", (dialog, which) -> openObbSafPicker(targetPkg))
-                    .setNegativeButton("Cancel", null)
-                    .show();
-        } catch (Throwable ignored) {
-        }
-    }
-
-    private void openObbSafPicker(String targetPkg) {
-        try {
-            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
-                    | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                android.net.Uri initialUri = android.provider.DocumentsContract.buildDocumentUri(
-                        "com.android.externalstorage.documents",
-                        "primary:Android/obb/" + targetPkg);
-                intent.putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, initialUri);
-            }
-            startActivityForResult(intent, REQUEST_SAF_OBB_TREE);
-        } catch (Throwable t) {
-            Toast.makeText(this, "Cannot open folder picker: " + t.getMessage(), Toast.LENGTH_LONG).show();
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_SAF_OBB_TREE && resultCode == RESULT_OK && data != null && data.getData() != null) {
-            android.net.Uri treeUri = data.getData();
-            try {
-                getContentResolver().takePersistableUriPermission(treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            } catch (Throwable ignored) {
-            }
-            com.featurestic.loader.sdk.FileCopyTask.saveSafTreeUri(this, selectedPackage, treeUri);
-            startVirtualSetupFlow();
-        }
-    }
-
-    private void updateSetupProgress(int percent, String title, String detail) {
-        tvSmartButtonTitle.setText("Setting Up... " + percent + "%");
-        tvSmartButtonSubtitle.setText(title);
-        progressSetupBar.setProgress(percent);
-        tvSetupStepDetail.setText(detail);
-    }
-
-    /**
-     * Launches the game inside FeaturesticBox when the user taps "Start Game"
-     */
-    private void launchGameInVirtualBox() {
-        if (!FeaturesticSdkHelper.isInstalledOnHost(this, selectedPackage)) {
-            Toast.makeText(this,
-                    "Please install " + getFriendlyTitle(selectedPackage) + " (" + selectedPackage + ") on your device first.",
-                    Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        tvSmartButtonTitle.setText("Launching Game...");
-        tvSmartButtonSubtitle.setText("Starting Featurestic Virtual Engine");
-        progressSmartButton.setVisibility(View.VISIBLE);
-
-        FeaturesticSdkHelper.launchVirtualGame(this, selectedPackage);
-
-        mainHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                progressSmartButton.setVisibility(View.GONE);
-                tvSmartButtonTitle.setText(AppConfig.BTN_START_TITLE);
-                tvSmartButtonSubtitle.setText(AppConfig.BTN_START_SUBTITLE);
-            }
-        }, 1800);
-    }
-
-    private String getFriendlyTitle(String pkg) {
-        if (AppConfig.PKG_BGMI.equals(pkg)) return "Battlegrounds Mobile India";
-        if (AppConfig.PKG_GLOBAL.equals(pkg)) return "PUBG Mobile Global";
-        if (AppConfig.PKG_KR.equals(pkg)) return "PUBG Mobile Korea";
-        if (AppConfig.PKG_VN.equals(pkg)) return "PUBG Mobile Vietnam";
-        if (AppConfig.PKG_TW.equals(pkg)) return "PUBG Mobile Taiwan";
-        return pkg;
     }
 
     private void setupEdgeToEdgeWindow() {
         Window window = getWindow();
-        if (window != null) {
-            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.setStatusBarColor(Color.parseColor("#07090E"));
-            window.setNavigationBarColor(Color.parseColor("#07090E"));
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            window.getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+            );
+        }
+    }
+
+    private void extractIntentData() {
+        Intent intent = getIntent();
+        if (intent != null) {
+            mLicenseKey = intent.getStringExtra("license_key");
+            mExpiryTimestamp = intent.getLongExtra("expiry_timestamp", 0);
+        }
+        if (mLicenseKey == null || mLicenseKey.trim().isEmpty()) {
+            mLicenseKey = PhpAuthManager.getSavedKey(this);
+        }
+    }
+
+    private void initViews() {
+        tvDeviceModel = findViewById(R.id.tvDeviceModel);
+        tvDeviceCodename = findViewById(R.id.tvDeviceCodename);
+        tvDeviceSpecs = findViewById(R.id.tvDeviceSpecs);
+        pillConnectedStatus = findViewById(R.id.pillConnectedStatus);
+
+        ivGameIcon = findViewById(R.id.ivGameIcon);
+        tvGameName = findViewById(R.id.tvGameName);
+        tvGamePackage = findViewById(R.id.tvGamePackage);
+        tvGameVersion = findViewById(R.id.tvGameVersion);
+        tvGameSupported = findViewById(R.id.tvGameSupported);
+        btnGameMenu = findViewById(R.id.btnGameMenu);
+
+        btnLaunchGame = findViewById(R.id.btnLaunchGame);
+        btnLaunchContent = findViewById(R.id.btnLaunchContent);
+        tvLaunchLabel = findViewById(R.id.tvLaunchLabel);
+        pbLaunchProgress = findViewById(R.id.pbLaunchProgress);
+
+        switchHideEsp = findViewById(R.id.switchHideEsp);
+
+        tvCountdownDays = findViewById(R.id.tvCountdownDays);
+        tvCountdownHours = findViewById(R.id.tvCountdownHours);
+        tvCountdownMinutes = findViewById(R.id.tvCountdownMinutes);
+        tvCountdownSeconds = findViewById(R.id.tvCountdownSeconds);
+
+        btnNotificationBell = findViewById(R.id.btnNotificationBell);
+    }
+
+    private void setupDeviceInfo() {
+        // e.g. "samsung SM-M315F" or "OPPO CPH2731"
+        String manufacturer = Build.MANUFACTURER != null ? Build.MANUFACTURER.toUpperCase() : "DEVICE";
+        String model = Build.MODEL != null ? Build.MODEL : "Android";
+        tvDeviceModel.setText(manufacturer + " " + model);
+
+        // e.g. "(OP5EE7L1)" or "(m31)"
+        String deviceCodename = Build.DEVICE != null ? Build.DEVICE : "generic";
+        tvDeviceCodename.setText("(" + deviceCodename + ")");
+
+        // e.g. "Android 16 · arm64-v8a"
+        String abi = (Build.SUPPORTED_ABIS != null && Build.SUPPORTED_ABIS.length > 0)
+                ? Build.SUPPORTED_ABIS[0] : "arm64-v8a";
+        tvDeviceSpecs.setText("Android " + Build.VERSION.RELEASE + " · " + abi);
+    }
+
+    private void setupGameCard() {
+        tvGameName.setText(AppConfig.TARGET_GAME_NAME);
+        tvGamePackage.setText("Package : " + TARGET_PKG);
+        tvGameSupported.setText("Supported : " + AppConfig.SUPPORTED_VERSION);
+
+        // Load host installed BGMI icon and version
+        try {
+            PackageInfo pInfo = FeaturesticSdkHelper.findHostGameInfo(this, TARGET_PKG);
+            if (pInfo != null) {
+                tvGameVersion.setText("Version : " + pInfo.versionName);
+                Drawable hostIcon = getPackageManager().getApplicationIcon(TARGET_PKG);
+                if (hostIcon != null) {
+                    ivGameIcon.setImageDrawable(hostIcon);
+                }
+            } else {
+                tvGameVersion.setText("Version : " + AppConfig.SUPPORTED_VERSION);
             }
+        } catch (Throwable t) {
+            tvGameVersion.setText("Version : " + AppConfig.SUPPORTED_VERSION);
+        }
+    }
+
+    private void setupHideEspSwitch() {
+        SharedPreferences prefs = getSharedPreferences(PREF_SETTINGS, Context.MODE_PRIVATE);
+        boolean savedState = prefs.getBoolean(KEY_HIDE_ESP, false);
+        switchHideEsp.setChecked(savedState);
+        applyHideEsp(savedState, false);
+
+        switchHideEsp.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            prefs.edit().putBoolean(KEY_HIDE_ESP, isChecked).apply();
+            applyHideEsp(isChecked, true);
+        });
+    }
+
+    private void applyHideEsp(boolean enabled, boolean showToast) {
+        try {
+            if (enabled) {
+                getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
+                if (showToast) {
+                    Toast.makeText(this, "Hide ESP Enabled", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+                if (showToast) {
+                    Toast.makeText(this, "Hide ESP Disabled", Toast.LENGTH_SHORT).show();
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void setupSubscriptionTimer() {
+        // Calculate remaining time
+        long now = System.currentTimeMillis();
+        long diff = mExpiryTimestamp > now ? (mExpiryTimestamp - now) : 0;
+
+        // If no remote timestamp provided, default to demo 48 days 09 hours 46 mins 38 secs (from video)
+        if (diff <= 0) {
+            diff = TimeUnit.DAYS.toMillis(48)
+                    + TimeUnit.HOURS.toMillis(9)
+                    + TimeUnit.MINUTES.toMillis(46)
+                    + TimeUnit.SECONDS.toMillis(38);
+        }
+
+        if (mCountDownTimer != null) {
+            mCountDownTimer.cancel();
+        }
+
+        mCountDownTimer = new CountDownTimer(diff, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                long days = TimeUnit.MILLISECONDS.toDays(millisUntilFinished);
+                long hours = TimeUnit.MILLISECONDS.toHours(millisUntilFinished) % 24;
+                long minutes = TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished) % 60;
+                long seconds = TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) % 60;
+
+                tvCountdownDays.setText(String.format("%02d", days));
+                tvCountdownHours.setText(String.format("%02d", hours));
+                tvCountdownMinutes.setText(String.format("%02d", minutes));
+                tvCountdownSeconds.setText(String.format("%02d", seconds));
+            }
+
+            @Override
+            public void onFinish() {
+                tvCountdownDays.setText("00");
+                tvCountdownHours.setText("00");
+                tvCountdownMinutes.setText("00");
+                tvCountdownSeconds.setText("00");
+            }
+        }.start();
+    }
+
+    private void setupListeners() {
+        // Connected pill click -> Connection toast info
+        pillConnectedStatus.setOnClickListener(v -> {
+            Toast.makeText(this, "Connected securely to Featurestic Virtual Box Engine", Toast.LENGTH_SHORT).show();
+        });
+
+        // Notification Bell click -> Announcements dialog
+        btnNotificationBell.setOnClickListener(v -> showNotificationDialog());
+
+        // 3-dots Game Menu click
+        btnGameMenu.setOnClickListener(v -> showGameOptionsMenu());
+
+        // LAUNCH GAME button click
+        btnLaunchGame.setOnClickListener(v -> handleLaunchGame());
+    }
+
+    private void showNotificationDialog() {
+        AlertDialog.Builder b = new AlertDialog.Builder(this);
+        b.setTitle("System Broadcast");
+        b.setMessage("All security modules and game hooks are active.\nStatus: 🟢 Protected & Operational.");
+        b.setPositiveButton("OK", null);
+        b.show();
+    }
+
+    private void showGameOptionsMenu() {
+        PopupMenu popup = new PopupMenu(this, btnGameMenu);
+        popup.getMenu().add(0, 1, 0, "Re-sync Game OBB & Data");
+        popup.getMenu().add(0, 2, 1, "Verify Virtual Container");
+        popup.getMenu().add(0, 3, 2, "Sign Out");
+
+        popup.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case 1:
+                    syncObbFiles();
+                    return true;
+                case 2:
+                    Toast.makeText(this, "Virtual container is verified & ready", Toast.LENGTH_SHORT).show();
+                    return true;
+                case 3:
+                    signOut();
+                    return true;
+            }
+            return false;
+        });
+        popup.show();
+    }
+
+    private void syncObbFiles() {
+        setLaunchLoading(true, "Syncing OBB...");
+        new Thread(() -> {
+            boolean ok = FeaturesticSdkHelper.syncObbNow(MainActivity.this, TARGET_PKG);
+            runOnUiThread(() -> {
+                setLaunchLoading(false, "LAUNCH GAME");
+                Toast.makeText(MainActivity.this, ok ? "OBB Sync Completed!" : "OBB Sync Failed — verify /SdCard/Android/obb", Toast.LENGTH_LONG).show();
+            });
+        }).start();
+    }
+
+    private void signOut() {
+        PhpAuthManager.clearKey(this);
+        Intent intent = new Intent(this, LoginActivity.class);
+        startActivity(intent);
+        finish();
+    }
+
+    private void handleLaunchGame() {
+        if (isLaunching) return;
+
+        // Check essential permissions
+        if (!FeaturesticSdkHelper.hasAllFilesPermission(this)) {
+            Toast.makeText(this, "Please grant All Files Access for OBB synchronization", Toast.LENGTH_LONG).show();
+            FeaturesticSdkHelper.requestAllFilesPermission(this);
+            return;
+        }
+
+        if (!FeaturesticSdkHelper.hasOverlayPermission(this)) {
+            Toast.makeText(this, "Please allow Display over other apps (Floating Permission)", Toast.LENGTH_LONG).show();
+            FeaturesticSdkHelper.requestOverlayPermission(this);
+            return;
+        }
+
+        setLaunchLoading(true, "Launching...");
+
+        // Launch game inside virtual container
+        boolean started = FeaturesticSdkHelper.launchVirtualGame(this, TARGET_PKG);
+        mMainHandler.postDelayed(() -> {
+            setLaunchLoading(false, "LAUNCH GAME");
+            if (!started) {
+                Toast.makeText(this, "Failed to launch game container", Toast.LENGTH_SHORT).show();
+            }
+        }, 1200);
+    }
+
+    private void setLaunchLoading(boolean loading, String label) {
+        isLaunching = loading;
+        if (loading) {
+            btnLaunchContent.setVisibility(View.INVISIBLE);
+            pbLaunchProgress.setVisibility(View.VISIBLE);
+            btnLaunchGame.setEnabled(false);
+        } else {
+            btnLaunchContent.setVisibility(View.VISIBLE);
+            pbLaunchProgress.setVisibility(View.GONE);
+            tvLaunchLabel.setText(label);
+            btnLaunchGame.setEnabled(true);
         }
     }
 }

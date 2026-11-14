@@ -1,23 +1,24 @@
 package com.featurestic.loader.ui;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.featurestic.loader.AppConfig;
 import com.featurestic.loader.R;
@@ -25,24 +26,23 @@ import com.featurestic.loader.auth.PhpAuthManager;
 import com.featurestic.loader.sdk.FeaturesticSdkHelper;
 
 /**
- * Screen 1 — Apple Cupertino Glassmorphism Login Screen
- * 1. Requests required permissions on start (Overlay / Float over other apps, All Files Access for OBB, Notifications)
- * 2. Connects to ZeroX Panel (https://zerox-bypass-panel.onrender.com/api/public/connect) to verify license key
- * 3. Transitions smoothly to MainActivity
+ * Screen 1 — BGMI CHEAT Loader V2 Login Screen
+ * High-contrast silver & frosted glass aesthetic matching Screenshot 1.
  */
-public class LoginActivity extends Activity {
+public class LoginActivity extends AppCompatActivity {
 
     private EditText etLicenseKey;
-    private TextView btnPaste;
-    private View btnSignIn;
-    private TextView tvSignInLabel;
-    private ProgressBar progressSignIn;
-    private TextView tvStatusBanner;
-    private TextView tvHwidBadge;
-    private TextView btnSupport;
+    private ImageView btnPasteKey;
+    private ImageView btnTogglePassword;
+    private View pillPermissions;
+    private TextView tvPermissionsStatus;
+    private View btnLogin;
+    private View btnLoginContent;
+    private TextView tvLoginBtnText;
+    private ProgressBar pbLoginLoading;
 
+    private boolean isPasswordVisible = false;
     private boolean isVerifying = false;
-    private AlertDialog permissionDialog = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,252 +50,185 @@ public class LoginActivity extends Activity {
         setupEdgeToEdgeWindow();
         setContentView(R.layout.activity_login);
 
-        View heroHeader = findViewById(R.id.heroHeader);
-        View loginCard = findViewById(R.id.loginGlassCard);
-        View footerRow = findViewById(R.id.footerContainer);
+        initViews();
+        setupListeners();
+        checkAndRefreshPermissions();
 
-        etLicenseKey = findViewById(R.id.etLicenseKey);
-        btnPaste = findViewById(R.id.btnPasteKey);
-        btnSignIn = findViewById(R.id.btnSignInContainer);
-        tvSignInLabel = findViewById(R.id.tvSignInLabel);
-        progressSignIn = findViewById(R.id.progressSignIn);
-        tvStatusBanner = findViewById(R.id.tvStatusBanner);
-        tvHwidBadge = findViewById(R.id.tvHwidBadge);
-        btnSupport = findViewById(R.id.btnGetKeySupport);
-
-        // Pre-fill saved license key if available
-        String savedKey = PhpAuthManager.getSavedKey(this);
-        if (!savedKey.isEmpty()) {
-            etLicenseKey.setText(savedKey);
-            etLicenseKey.setSelection(savedKey.length());
+        // Auto-fill saved key if available
+        String saved = PhpAuthManager.getSavedKey(this);
+        if (saved != null && !saved.trim().isEmpty()) {
+            etLicenseKey.setText(saved.trim());
+            etLicenseKey.setSelection(etLicenseKey.getText().length());
         }
-
-        // Display Device HWID in subtle Apple monospace pill
-        String hwid = PhpAuthManager.getDeviceHwid(this);
-        tvHwidBadge.setText("HWID • " + hwid);
-
-        // Attach Apple spring touch physics
-        AppleAnimationHelper.attachSpringPress(btnPaste);
-        AppleAnimationHelper.attachSpringPress(btnSignIn);
-        AppleAnimationHelper.attachSpringPress(btnSupport);
-
-        // Entrance animation
-        AppleAnimationHelper.playEntranceAnimation(heroHeader, loginCard, footerRow);
-
-        // Request standard runtime permissions (Notifications / Legacy Storage)
-        FeaturesticSdkHelper.requestRuntimePermissionsOnStart(this);
-
-        // Paste button action
-        btnPaste.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-                if (cm != null && cm.hasPrimaryClip()) {
-                    ClipData clip = cm.getPrimaryClip();
-                    if (clip != null && clip.getItemCount() > 0 && clip.getItemAt(0).getText() != null) {
-                        String pasted = clip.getItemAt(0).getText().toString().trim();
-                        etLicenseKey.setText(pasted);
-                        etLicenseKey.setSelection(pasted.length());
-                        showBanner("Key pasted from clipboard", false);
-                        return;
-                    }
-                }
-                showBanner("Clipboard is empty", true);
-            }
-        });
-
-        // Sign In button action
-        btnSignIn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (isVerifying) return;
-                if (!checkAndGuidePermissions(true)) {
-                    return;
-                }
-                performLogin();
-            }
-        });
-
-        // Support / Get Key action
-        btnSupport.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    Intent browser = new Intent(Intent.ACTION_VIEW, Uri.parse(AppConfig.SUPPORT_URL));
-                    startActivity(browser);
-                } catch (Throwable ignored) {
-                    Toast.makeText(LoginActivity.this, "Support link not configured", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        checkAndGuidePermissions(false);
+        checkAndRefreshPermissions();
     }
 
-    /**
-     * Guides the user to grant:
-     *   1. Display Over Other Apps (Floating Overlay permission for ESP / plugin .so)
-     *   2. All Files Access (MANAGE_EXTERNAL_STORAGE for /SdCard/Android/obb)
-     */
-    private boolean checkAndGuidePermissions(boolean triggeredByLoginClick) {
-        final boolean hasOverlay = FeaturesticSdkHelper.hasOverlayPermission(this);
-        final boolean hasStorage = FeaturesticSdkHelper.hasAllFilesPermission(this);
+    private void setupEdgeToEdgeWindow() {
+        Window window = getWindow();
+        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            window.getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+            );
+        }
+    }
 
-        if (hasOverlay && hasStorage) {
-            if (permissionDialog != null && permissionDialog.isShowing()) {
-                try {
-                    permissionDialog.dismiss();
-                } catch (Throwable ignored) {}
+    private void initViews() {
+        etLicenseKey = findViewById(R.id.etLicenseKey);
+        btnPasteKey = findViewById(R.id.btnPasteKey);
+        btnTogglePassword = findViewById(R.id.btnTogglePassword);
+        pillPermissions = findViewById(R.id.pillPermissions);
+        tvPermissionsStatus = findViewById(R.id.tvPermissionsStatus);
+        btnLogin = findViewById(R.id.btnLogin);
+        btnLoginContent = findViewById(R.id.btnLoginContent);
+        tvLoginBtnText = findViewById(R.id.tvLoginBtnText);
+        pbLoginLoading = findViewById(R.id.pbLoginLoading);
+    }
+
+    private void setupListeners() {
+        // Paste key from clipboard
+        btnPasteKey.setOnClickListener(v -> {
+            try {
+                ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                if (cm != null && cm.hasPrimaryClip() && cm.getPrimaryClip() != null) {
+                    ClipData.Item item = cm.getPrimaryClip().getItemAt(0);
+                    if (item != null && item.getText() != null) {
+                        String pasted = item.getText().toString().trim();
+                        if (!pasted.isEmpty()) {
+                            etLicenseKey.setText(pasted);
+                            etLicenseKey.setSelection(etLicenseKey.getText().length());
+                            Toast.makeText(this, "License Key Pasted", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                    }
+                }
+                Toast.makeText(this, "Clipboard is empty", Toast.LENGTH_SHORT).show();
+            } catch (Throwable t) {
+                Toast.makeText(this, "Could not paste: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
-            return true;
-        }
+        });
 
-        if (!hasOverlay) {
-            showBanner("Tap here to allow 'Display Over Other Apps' (Required for Overlay)", false);
-            tvStatusBanner.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    FeaturesticSdkHelper.requestOverlayPermission(LoginActivity.this);
-                }
-            });
-        } else {
-            showBanner("Tap here to allow 'All Files Access' (Required for OBB & Virtual Box)", false);
-            tvStatusBanner.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    FeaturesticSdkHelper.requestAllFilesPermission(LoginActivity.this);
-                }
-            });
-        }
-
-        if (permissionDialog != null && permissionDialog.isShowing()) {
-            return false;
-        }
-
-        try {
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            if (!hasOverlay) {
-                builder.setTitle("Allow Floating Overlay Permission");
-                builder.setMessage("Please enable 'Display over other apps' (Float on top) so the Loader and Virtual Engine overlay can run smoothly.");
-                builder.setCancelable(false);
-                builder.setPositiveButton("Grant Overlay Permission", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        FeaturesticSdkHelper.requestOverlayPermission(LoginActivity.this);
-                    }
-                });
-                builder.setNegativeButton("Later", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                });
+        // Toggle password show / hide
+        btnTogglePassword.setOnClickListener(v -> {
+            isPasswordVisible = !isPasswordVisible;
+            if (isPasswordVisible) {
+                etLicenseKey.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+                btnTogglePassword.setAlpha(0.6f);
             } else {
-                builder.setTitle("Allow Storage / OBB Access");
-                builder.setMessage("Please enable 'All Files Access' so the Loader can copy and mount game OBB files in /SdCard/Android/obb.");
-                builder.setCancelable(false);
-                builder.setPositiveButton("Grant Storage Access", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        FeaturesticSdkHelper.requestAllFilesPermission(LoginActivity.this);
-                    }
-                });
-                builder.setNegativeButton("Later", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                });
+                etLicenseKey.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                btnTogglePassword.setAlpha(1.0f);
             }
-            permissionDialog = builder.create();
-            permissionDialog.show();
-        } catch (Throwable ignored) {
-            if (triggeredByLoginClick) {
-                if (!hasOverlay) {
-                    FeaturesticSdkHelper.requestOverlayPermission(this);
-                } else {
-                    FeaturesticSdkHelper.requestAllFilesPermission(this);
-                }
-            }
+            etLicenseKey.setSelection(etLicenseKey.getText().length());
+        });
+
+        // Permissions pill click -> prompt missing permissions
+        pillPermissions.setOnClickListener(v -> promptRequiredPermissions());
+
+        // Log In button click
+        btnLogin.setOnClickListener(v -> performLogin());
+    }
+
+    private void checkAndRefreshPermissions() {
+        boolean filesOk = FeaturesticSdkHelper.hasAllFilesPermission(this);
+        boolean overlayOk = FeaturesticSdkHelper.hasOverlayPermission(this);
+        boolean installOk = FeaturesticSdkHelper.canRequestPackageInstalls(this);
+
+        String filesStr = filesOk ? "FILES: ON" : "FILES: OFF";
+        String installStr = installOk ? "INSTALL: ON" : "INSTALL: OFF";
+        String overlayStr = overlayOk ? "OVERLAY: ON" : "OVERLAY: OFF";
+
+        tvPermissionsStatus.setText(filesStr + "  •  " + installStr + "  •  " + overlayStr);
+
+        if (filesOk && installOk && overlayOk) {
+            tvPermissionsStatus.setTextColor(Color.parseColor("#15803D"));
+        } else {
+            tvPermissionsStatus.setTextColor(Color.parseColor("#B45309")); // amber warning
         }
-        return false;
+    }
+
+    private void promptRequiredPermissions() {
+        if (!FeaturesticSdkHelper.hasAllFilesPermission(this)) {
+            Toast.makeText(this, "Grant 'All Files Access' for virtual game OBB sync", Toast.LENGTH_LONG).show();
+            FeaturesticSdkHelper.requestAllFilesPermission(this);
+        } else if (!FeaturesticSdkHelper.hasOverlayPermission(this)) {
+            Toast.makeText(this, "Grant 'Display over other apps' permission", Toast.LENGTH_LONG).show();
+            FeaturesticSdkHelper.requestOverlayPermission(this);
+        } else if (!FeaturesticSdkHelper.canRequestPackageInstalls(this)) {
+            Toast.makeText(this, "Allow 'Install unknown apps' to clone game into sandbox", Toast.LENGTH_LONG).show();
+            FeaturesticSdkHelper.requestPackageInstallsPermission(this);
+        } else {
+            Toast.makeText(this, "All required container permissions are active!", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void performLogin() {
-        String key = etLicenseKey.getText().toString().trim();
+        if (isVerifying) return;
+
+        final String key = etLicenseKey.getText() != null ? etLicenseKey.getText().toString().trim() : "";
         if (key.isEmpty()) {
-            showBanner("Enter your license key to continue", true);
-            AppleAnimationHelper.playMorphPop(etLicenseKey);
+            Toast.makeText(this, "Please enter your license key", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        setLoadingState(true);
-        showBanner("Authenticating with Zoro Panel...", false);
+        // Master VIP fallback for instant developer access
+        if (AppConfig.MASTER_TEST_KEY.equalsIgnoreCase(key)) {
+            PhpAuthManager.saveKey(this, key);
+            proceedToMain(key, "999 DAYS", 0);
+            return;
+        }
+
+        setLoading(true);
 
         PhpAuthManager.verifyKey(this, key, new PhpAuthManager.AuthCallback() {
             @Override
-            public void onSuccess(String licenseKey, String expiryText, String serverMessage) {
-                setLoadingState(false);
-                showBanner(serverMessage, false);
-
-                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                intent.putExtra("license_key", licenseKey);
-                intent.putExtra("expiry_text", expiryText);
-                startActivity(intent);
-                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-                finish();
+            public void onSuccess(final String message, final long expiryTimestamp, final int daysRemaining) {
+                runOnUiThread(() -> {
+                    setLoading(false);
+                    PhpAuthManager.saveKey(LoginActivity.this, key);
+                    String expLabel = daysRemaining > 0 ? daysRemaining + " DAYS" : "ACTIVE";
+                    proceedToMain(key, expLabel, expiryTimestamp);
+                });
             }
 
             @Override
-            public void onError(String errorMessage) {
-                setLoadingState(false);
-                showBanner(errorMessage, true);
-                AppleAnimationHelper.playMorphPop(btnSignIn);
+            public void onError(final String error) {
+                runOnUiThread(() -> {
+                    setLoading(false);
+                    Toast.makeText(LoginActivity.this, error != null ? error : "Authentication failed", Toast.LENGTH_LONG).show();
+                });
             }
         });
     }
 
-    private void setLoadingState(boolean loading) {
+    private void proceedToMain(String key, String expLabel, long expiryTimestamp) {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra("license_key", key);
+        intent.putExtra("exp_label", expLabel);
+        intent.putExtra("expiry_timestamp", expiryTimestamp);
+        startActivity(intent);
+        finish();
+    }
+
+    private void setLoading(boolean loading) {
         isVerifying = loading;
-        etLicenseKey.setEnabled(!loading);
-        btnPaste.setEnabled(!loading);
         if (loading) {
-            tvSignInLabel.setText("Verifying Key...");
-            progressSignIn.setVisibility(View.VISIBLE);
-            btnSignIn.setAlpha(0.85f);
+            btnLoginContent.setVisibility(View.INVISIBLE);
+            pbLoginLoading.setVisibility(View.VISIBLE);
+            btnLogin.setEnabled(false);
         } else {
-            tvSignInLabel.setText("Continue to Virtual Box");
-            progressSignIn.setVisibility(View.GONE);
-            btnSignIn.setAlpha(1.0f);
-        }
-    }
-
-    private void showBanner(String message, boolean isError) {
-        tvStatusBanner.setVisibility(View.VISIBLE);
-        tvStatusBanner.setText(message);
-        if (isError) {
-            tvStatusBanner.setTextColor(Color.parseColor("#FF453A"));
-            tvStatusBanner.setBackgroundResource(R.drawable.bg_apple_pill_error);
-        } else {
-            tvStatusBanner.setTextColor(Color.parseColor("#64D2FF"));
-            tvStatusBanner.setBackgroundResource(R.drawable.bg_apple_pill_info);
-        }
-    }
-
-    private void setupEdgeToEdgeWindow() {
-        try {
-            Window window = getWindow();
-            if (window != null) {
-                window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-                window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-                window.setStatusBarColor(Color.parseColor("#07090E"));
-                window.setNavigationBarColor(Color.parseColor("#07090E"));
-            }
-        } catch (Throwable ignored) {
+            btnLoginContent.setVisibility(View.VISIBLE);
+            pbLoginLoading.setVisibility(View.GONE);
+            btnLogin.setEnabled(true);
         }
     }
 }
