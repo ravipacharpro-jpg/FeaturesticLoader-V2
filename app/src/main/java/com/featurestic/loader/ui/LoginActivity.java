@@ -6,10 +6,12 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.EditText;
@@ -52,6 +54,7 @@ public class LoginActivity extends AppCompatActivity {
 
         initViews();
         setupListeners();
+        setupKeyboardListener();
         checkAndRefreshPermissions();
 
         // Auto-fill saved key if available
@@ -81,6 +84,61 @@ public class LoginActivity extends AppCompatActivity {
                             | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
             );
         }
+    }
+
+    private void setupKeyboardListener() {
+        final View root = findViewById(R.id.rootLoginLayout);
+        final View bottomSheet = findViewById(R.id.bottomSheetCard);
+        final View heroSection = findViewById(R.id.llHeroSection);
+
+        if (root == null || bottomSheet == null) return;
+
+        root.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            private int lastDiff = 0;
+
+            @Override
+            public void onGlobalLayout() {
+                Rect r = new Rect();
+                root.getWindowVisibleDisplayFrame(r);
+                int screenHeight = root.getRootView().getHeight();
+                int keypadHeight = screenHeight - r.bottom;
+
+                // When keyboard is open (takes up > 15% of screen height)
+                if (keypadHeight > screenHeight * 0.15) {
+                    if (Math.abs(lastDiff - keypadHeight) > 10) {
+                        lastDiff = keypadHeight;
+                        // Animate bottom card smoothly up above the soft keyboard
+                        bottomSheet.animate()
+                                .translationY(-keypadHeight + 24)
+                                .setDuration(200)
+                                .start();
+                        if (heroSection != null) {
+                            heroSection.animate()
+                                    .alpha(0.0f)
+                                    .translationY(-keypadHeight * 0.35f)
+                                    .setDuration(160)
+                                    .start();
+                        }
+                    }
+                } else {
+                    // Keyboard is closed: animate back to resting position
+                    if (lastDiff != 0) {
+                        lastDiff = 0;
+                        bottomSheet.animate()
+                                .translationY(0)
+                                .setDuration(200)
+                                .start();
+                        if (heroSection != null) {
+                            heroSection.animate()
+                                    .alpha(1.0f)
+                                    .translationY(0)
+                                    .setDuration(200)
+                                    .start();
+                        }
+                    }
+                }
+            }
+        });
     }
 
     private void initViews() {

@@ -16,9 +16,9 @@ import android.os.Looper;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
-import android.view.WindowManager;
+import android.app.Dialog;
+import android.view.Gravity;
 import android.widget.ImageView;
-import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -289,34 +289,59 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showNotificationDialog() {
-        AlertDialog.Builder b = new AlertDialog.Builder(this);
-        b.setTitle("System Broadcast");
-        b.setMessage("All security modules and game hooks are active.\nStatus: 🟢 Protected & Operational.");
-        b.setPositiveButton("OK", null);
-        b.show();
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_notifications);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
+            dialog.getWindow().setGravity(Gravity.CENTER);
+        }
+
+        View btnDismiss = dialog.findViewById(R.id.btnDismissNotification);
+        if (btnDismiss != null) {
+            btnDismiss.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        dialog.show();
     }
 
     private void showGameOptionsMenu() {
-        PopupMenu popup = new PopupMenu(this, btnGameMenu);
-        popup.getMenu().add(0, 1, 0, "Re-sync Game OBB & Data");
-        popup.getMenu().add(0, 2, 1, "Verify Virtual Container");
-        popup.getMenu().add(0, 3, 2, "Sign Out");
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_game_menu);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
+            dialog.getWindow().setGravity(Gravity.BOTTOM);
+            dialog.getWindow().getAttributes().windowAnimations = android.R.style.Animation_Dialog;
+        }
 
-        popup.setOnMenuItemClickListener(item -> {
-            switch (item.getItemId()) {
-                case 1:
-                    syncObbFiles();
-                    return true;
-                case 2:
-                    Toast.makeText(this, "Virtual container is verified & ready", Toast.LENGTH_SHORT).show();
-                    return true;
-                case 3:
-                    signOut();
-                    return true;
-            }
-            return false;
-        });
-        popup.show();
+        View btnSync = dialog.findViewById(R.id.btnMenuSyncObb);
+        if (btnSync != null) {
+            btnSync.setOnClickListener(v -> {
+                dialog.dismiss();
+                syncObbFiles();
+            });
+        }
+
+        View btnVerify = dialog.findViewById(R.id.btnMenuVerifyContainer);
+        if (btnVerify != null) {
+            btnVerify.setOnClickListener(v -> {
+                dialog.dismiss();
+                Toast.makeText(this, "Virtual container is verified & ready", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        View btnSignOut = dialog.findViewById(R.id.btnMenuSignOut);
+        if (btnSignOut != null) {
+            btnSignOut.setOnClickListener(v -> {
+                dialog.dismiss();
+                signOut();
+            });
+        }
+
+        dialog.show();
     }
 
     private void syncObbFiles() {

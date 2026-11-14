@@ -15,7 +15,7 @@ public final class AppConfig {
     public static final String BRAND_NAME          = "BGMI CHEAT";
     public static final String BRAND_TAGLINE       = "PLAY BEYOND LIMITS";
     public static final String LOGIN_SUBTITLE      = "Welcome back! Please authenticate to continue.";
-    public static final String COPYRIGHT_LABEL     = "Copyright @2025 - BGMI CHEAT";
+    public static final String COPYRIGHT_LABEL     = "Copyright @2026 - Featurestic Leaks";
     public static final String VERSION_LABEL       = "Loader (v1.0.4)";
     public static final String INSTALLED_LABEL     = "Installed: 1.0.4";
 
