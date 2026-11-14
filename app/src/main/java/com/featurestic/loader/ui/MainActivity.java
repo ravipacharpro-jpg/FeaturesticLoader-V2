@@ -327,7 +327,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void signOut() {
-        PhpAuthManager.clearKey(this);
+        PhpAuthManager.clearSession(this);
         Intent intent = new Intent(this, LoginActivity.class);
         startActivity(intent);
         finish();

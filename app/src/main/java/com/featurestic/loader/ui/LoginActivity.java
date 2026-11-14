@@ -165,7 +165,7 @@ public class LoginActivity extends AppCompatActivity {
             FeaturesticSdkHelper.requestOverlayPermission(this);
         } else if (!FeaturesticSdkHelper.canRequestPackageInstalls(this)) {
             Toast.makeText(this, "Allow 'Install unknown apps' to clone game into sandbox", Toast.LENGTH_LONG).show();
-            FeaturesticSdkHelper.requestPackageInstallsPermission(this);
+            FeaturesticSdkHelper.requestInstallPackagesPermission(this);
         } else {
             Toast.makeText(this, "All required container permissions are active!", Toast.LENGTH_SHORT).show();
         }
@@ -182,7 +182,7 @@ public class LoginActivity extends AppCompatActivity {
 
         // Master VIP fallback for instant developer access
         if (AppConfig.MASTER_TEST_KEY.equalsIgnoreCase(key)) {
-            PhpAuthManager.saveKey(this, key);
+            PhpAuthManager.saveSession(this, key, "999 DAYS", true);
             proceedToMain(key, "999 DAYS", 0);
             return;
         }
@@ -191,12 +191,11 @@ public class LoginActivity extends AppCompatActivity {
 
         PhpAuthManager.verifyKey(this, key, new PhpAuthManager.AuthCallback() {
             @Override
-            public void onSuccess(final String message, final long expiryTimestamp, final int daysRemaining) {
+            public void onSuccess(final String licenseKey, final String expiryText, final String serverMessage) {
                 runOnUiThread(() -> {
                     setLoading(false);
-                    PhpAuthManager.saveKey(LoginActivity.this, key);
-                    String expLabel = daysRemaining > 0 ? daysRemaining + " DAYS" : "ACTIVE";
-                    proceedToMain(key, expLabel, expiryTimestamp);
+                    PhpAuthManager.saveSession(LoginActivity.this, licenseKey, expiryText, true);
+                    proceedToMain(licenseKey, expiryText, 0);
                 });
             }
 
