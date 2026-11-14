@@ -41,6 +41,10 @@ jobs:
               print('Icon generation warning:', e)
           "
 
+      - name: Clean Background Artwork
+        run: |
+          python3 scripts/clean_background.py app/src/main/res/drawable/bg_soldier.jpg app/src/main/res/drawable/bg_soldier.jpg
+
       - name: Build Debug & Signed Release APK
         run: |
           chmod +x ./gradlew

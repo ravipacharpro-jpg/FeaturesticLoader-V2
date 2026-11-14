@@ -18,12 +18,10 @@ import java.util.Random;
  */
 public class FallingLeavesView extends View {
 
-    private static final int LEAF_COUNT = 24;
+    private static final int LEAF_COUNT = 16;
     private final List<LeafParticle> mLeaves = new ArrayList<>();
     private final Paint mLeafPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint mVeinPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path mLeafPath = new Path();
-    private final Path mVeinPath = new Path();
     private final Random mRandom = new Random();
 
     private boolean mIsInitialized = false;
@@ -45,23 +43,13 @@ public class FallingLeavesView extends View {
 
     private void init() {
         mLeafPaint.setStyle(Paint.Style.FILL);
-        mVeinPaint.setStyle(Paint.Style.STROKE);
-        mVeinPaint.setStrokeWidth(1.2f);
-        mVeinPaint.setColor(Color.argb(70, 20, 25, 35));
 
-        // Pre-build a realistic leaf silhouette geometry centered at (0, 0) normalized to [-1, 1]
+        // Pre-build smooth organic leaf petal silhouette centered at (0, 0)
         mLeafPath.reset();
         mLeafPath.moveTo(0, -1.0f);
-        // Right curve
-        mLeafPath.cubicTo(0.65f, -0.6f, 0.75f, 0.35f, 0, 1.0f);
-        // Left curve
-        mLeafPath.cubicTo(-0.75f, 0.35f, -0.65f, -0.6f, 0, -1.0f);
+        mLeafPath.cubicTo(0.55f, -0.55f, 0.65f, 0.35f, 0, 1.0f);
+        mLeafPath.cubicTo(-0.65f, 0.35f, -0.55f, -0.55f, 0, -1.0f);
         mLeafPath.close();
-
-        // Leaf center vein line
-        mVeinPath.reset();
-        mVeinPath.moveTo(0, -0.9f);
-        mVeinPath.lineTo(0, 0.9f);
     }
 
     @Override
@@ -84,18 +72,18 @@ public class FallingLeavesView extends View {
 
     private void resetLeaf(LeafParticle leaf, int width, int height, boolean scatterFullHeight) {
         leaf.x = mRandom.nextFloat() * width;
-        leaf.y = scatterFullHeight ? (mRandom.nextFloat() * height) : (-20f - mRandom.nextFloat() * 80f);
-        leaf.size = 14f + mRandom.nextFloat() * 18f; // 14dp - 32dp equivalent
-        leaf.speedY = 1.2f + mRandom.nextFloat() * 2.2f;
-        leaf.swayAmp = 1.0f + mRandom.nextFloat() * 2.0f;
-        leaf.swayFreq = 0.015f + mRandom.nextFloat() * 0.025f;
+        leaf.y = scatterFullHeight ? (mRandom.nextFloat() * height) : (-20f - mRandom.nextFloat() * 60f);
+        leaf.size = 8f + mRandom.nextFloat() * 10f; // 8dp - 18dp subtle petals
+        leaf.speedY = 0.8f + mRandom.nextFloat() * 1.5f;
+        leaf.swayAmp = 0.8f + mRandom.nextFloat() * 1.6f;
+        leaf.swayFreq = 0.012f + mRandom.nextFloat() * 0.02f;
         leaf.swayPhase = mRandom.nextFloat() * (float) Math.PI * 2f;
         leaf.rotation = mRandom.nextFloat() * 360f;
-        leaf.rotSpeed = -1.2f + mRandom.nextFloat() * 2.4f;
-        // Natural semi-transparent graphite/charcoal tones matching background foliage
-        int alpha = 45 + mRandom.nextInt(95);
-        int grayTone = 35 + mRandom.nextInt(45);
-        leaf.color = Color.argb(alpha, grayTone, grayTone + 5, grayTone + 15);
+        leaf.rotSpeed = -0.8f + mRandom.nextFloat() * 1.6f;
+        // Soft translucent foliage tones (matching realistic leaves in branch)
+        int alpha = 30 + mRandom.nextInt(45); // alpha 30 - 75
+        int tone = 50 + mRandom.nextInt(35);
+        leaf.color = Color.argb(alpha, tone, tone + 6, tone + 12);
     }
 
     @Override
@@ -127,7 +115,6 @@ public class FallingLeavesView extends View {
 
             mLeafPaint.setColor(leaf.color);
             canvas.drawPath(mLeafPath, mLeafPaint);
-            canvas.drawPath(mVeinPath, mVeinPaint);
 
             canvas.restore();
         }

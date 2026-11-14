@@ -189,12 +189,16 @@ public class MainActivity extends AppCompatActivity {
                 Drawable hostIcon = getPackageManager().getApplicationIcon(TARGET_PKG);
                 if (hostIcon != null) {
                     ivGameIcon.setImageDrawable(hostIcon);
+                } else {
+                    ivGameIcon.setImageResource(R.drawable.pubg_india);
                 }
             } else {
                 tvGameVersion.setText("Version : " + AppConfig.SUPPORTED_VERSION);
+                ivGameIcon.setImageResource(R.drawable.pubg_india);
             }
         } catch (Throwable t) {
             tvGameVersion.setText("Version : " + AppConfig.SUPPORTED_VERSION);
+            ivGameIcon.setImageResource(R.drawable.pubg_india);
         }
     }
 
