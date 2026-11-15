@@ -385,11 +385,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="false"
-                    app:showText="false"
+                    android:showText="false"
                     android:textOn=""
-                    android:textOff=""
-                    app:textOn=""
-                    app:textOff="" />
+                    android:textOff="" />
             </LinearLayout>
 
             <!-- Card 4: Subscription / License Validity Card -->
