@@ -15,6 +15,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.provider.Settings;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -171,12 +172,15 @@ public class FloatingMenuService extends Service {
             layoutType = WindowManager.LayoutParams.TYPE_PHONE;
         }
 
+        int bubblePx = (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, 58, getResources().getDisplayMetrics()
+        );
+
         mBubbleParams = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
+                bubblePx,
+                bubblePx,
                 layoutType,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                        | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
                 PixelFormat.TRANSLUCENT
         );
 
@@ -229,10 +233,13 @@ public class FloatingMenuService extends Service {
 
     private void snapBubbleToEdge() {
         int screenWidth = getResources().getDisplayMetrics().widthPixels;
-        if (mBubbleParams.x + (mBubbleView.getWidth() / 2) < screenWidth / 2) {
+        int bubbleWidth = (mBubbleView != null && mBubbleView.getWidth() > 0)
+                ? mBubbleView.getWidth()
+                : (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 58, getResources().getDisplayMetrics());
+        if (mBubbleParams.x + (bubbleWidth / 2) < screenWidth / 2) {
             mBubbleParams.x = 16;
         } else {
-            mBubbleParams.x = screenWidth - mBubbleView.getWidth() - 16;
+            mBubbleParams.x = screenWidth - bubbleWidth - 16;
         }
         try {
             mWindowManager.updateViewLayout(mBubbleView, mBubbleParams);
