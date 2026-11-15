@@ -33,7 +33,7 @@ public final class AppConfig {
     // ------------------------------------------------------------------------
     // 2. BACKEND & PANEL AUTHENTICATION SETTINGS
     // ------------------------------------------------------------------------
-    public static final String PHP_PANEL_URL       = "https://zoro.manishflash.online/connect";
+    public static final String PHP_PANEL_URL       = "https://featurestic-key-center.vercel.app/c/ownerravi6130_loader/connect";
     public static final String SDK_LICENSE_KEY     = "FBVIP-SMC154L690";
     public static final String PHP_GAME_TAG        = "PUBG";
 

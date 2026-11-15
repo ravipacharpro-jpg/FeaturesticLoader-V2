@@ -204,6 +204,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupHideEspSwitch() {
+        if (switchHideEsp == null) return;
+        try {
+            switchHideEsp.setShowText(false);
+            switchHideEsp.setTextOn("");
+            switchHideEsp.setTextOff("");
+        } catch (Throwable ignored) {}
+
         SharedPreferences prefs = getSharedPreferences(PREF_SETTINGS, Context.MODE_PRIVATE);
         boolean savedState = prefs.getBoolean(KEY_HIDE_ESP, false);
         switchHideEsp.setChecked(savedState);
@@ -334,6 +341,18 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        View btnOpenFloating = dialog.findViewById(R.id.btnMenuOpenFloating);
+        if (btnOpenFloating != null) {
+            btnOpenFloating.setOnClickListener(v -> {
+                dialog.dismiss();
+                if (!FeaturesticSdkHelper.hasOverlayPermission(MainActivity.this)) {
+                    FeaturesticSdkHelper.requestOverlayPermission(MainActivity.this);
+                } else {
+                    FloatingMenuService.start(MainActivity.this);
+                    Toast.makeText(MainActivity.this, "Floating Icon Active! Tap bubble to open Mod Menu.", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
         View btnSignOut = dialog.findViewById(R.id.btnMenuSignOut);
         if (btnSignOut != null) {
             btnSignOut.setOnClickListener(v -> {
@@ -387,6 +406,9 @@ public class MainActivity extends AppCompatActivity {
             setLaunchLoading(false, "LAUNCH GAME");
             if (!started) {
                 Toast.makeText(this, "Failed to launch game container", Toast.LENGTH_SHORT).show();
+            } else {
+                // Launch Floating Mod Menu Bubble over the game
+                FloatingMenuService.start(MainActivity.this);
             }
         }, 1200);
     }

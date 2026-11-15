@@ -384,7 +384,12 @@
                     android:id="@+id/switchHideEsp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:checked="false" />
+                    android:checked="false"
+                    app:showText="false"
+                    android:textOn=""
+                    android:textOff=""
+                    app:textOn=""
+                    app:textOff="" />
             </LinearLayout>
 
             <!-- Card 4: Subscription / License Validity Card -->

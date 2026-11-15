@@ -48,7 +48,7 @@ jobs:
       - name: Build Debug & Signed Release APK
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug assembleRelease --no-daemon --stacktrace
 
       - name: Upload Built APKs
         uses: actions/upload-artifact@v4
