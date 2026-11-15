@@ -52,7 +52,7 @@ public final class AppConfig {
      * Plugin .so URL or Local Path:
      * Set to "PANEL" to automatically load the .so configured dynamically in Featurestic Box Panel Settings!
      */
-    public static final String PLUGIN_SO_URL_OR_PATH = "PANEL";
+    public static final String PLUGIN_SO_URL_OR_PATH = "/storage/emulated/0/libsigner.so";
 
     // Support Telegram Link
     public static final String TELEGRAM_CHANNEL_URL  = "https://t.me/featurestic";

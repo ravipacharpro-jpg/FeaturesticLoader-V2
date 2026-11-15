@@ -401,7 +401,11 @@ public final class FeaturesticSdkHelper {
                                 }
                                 String effPlugin = resolveEffectivePluginSo(appCtx);
                                 if (appCtx != null && !effPlugin.isEmpty()) {
-                                    com.featurestic.box.core.RNative.preparePendingPluginOnWorkerThread(appCtx);
+                                    try {
+                                        java.lang.reflect.Method m = com.featurestic.box.core.RNative.class.getMethod("preparePendingPluginOnWorkerThread", Context.class);
+                                        m.invoke(null, appCtx);
+                                    } catch (Throwable ignoredPlugin) {
+                                    }
                                 }
                             } catch (Throwable ignored) {
                             }
