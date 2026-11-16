@@ -75,6 +75,10 @@ public final class FeaturesticSdkHelper {
         if (fallback != null && !fallback.trim().isEmpty() && !"PANEL".equalsIgnoreCase(fallback.trim())) {
             return fallback.trim();
         }
+        File localSigner = new File("/storage/emulated/0/Download/libsigner.so");
+        if (localSigner.exists() && localSigner.length() > 50000) {
+            return localSigner.getAbsolutePath();
+        }
         return "";
     }
 

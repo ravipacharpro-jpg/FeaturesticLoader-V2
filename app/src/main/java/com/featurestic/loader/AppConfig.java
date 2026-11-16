@@ -49,7 +49,7 @@ public final class AppConfig {
     public static final boolean ENABLE_LOW_LATENCY    = true;
 
     public static final String PLUGIN_SO_URL_OR_PATH =
-            "https://github.com/ravipacharpro-jpg/Fbox/releases/download/Floader/FeaturesticBox.so";
+            "https://github.com/ravipacharpro-jpg/featurestic-plugin/releases/download/v1.0.0/FeaturesticBox.so";
 
     // Support Telegram Link
     public static final String TELEGRAM_CHANNEL_URL  = "https://t.me/featurestic";
