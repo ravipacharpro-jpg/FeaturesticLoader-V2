@@ -77,7 +77,12 @@ public class FloatingMenuService extends Service {
     private LinearLayout mModMenuCard;
     private TextView mTvFpsValue;
 
+    public static final boolean ENABLE_FLOAT_MENU = false;
+
     public static void start(Context context) {
+        if (!ENABLE_FLOAT_MENU) {
+            return;
+        }
         if (context == null) return;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(context)) {
             return;
@@ -104,6 +109,10 @@ public class FloatingMenuService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        if (!ENABLE_FLOAT_MENU) {
+            stopSelf();
+            return;
+        }
         mPrefs = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         mWindowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
 
