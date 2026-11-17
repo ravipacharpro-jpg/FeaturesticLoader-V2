@@ -255,7 +255,7 @@ public class FileCopyTask {
                 if (!FeaturesticBoxCore.get().isInstalled(pkg, USER_ID)) {
                     InstallResult result = FeaturesticBoxCore.get().installPackageAsUser(pkg, USER_ID);
                     if ((result == null || !result.success) && !FeaturesticBoxCore.get().isInstalled(pkg, USER_ID)) {
-                        String hostApk = com.featurestic.box.FeaturesticBox.findHostApkPath(context, pkg);
+                        String hostApk = com.featurestic.sdk.FeaturesticBox.findHostApkPath(context, pkg);
                         if (hostApk != null && !hostApk.isEmpty()) {
                             result = FeaturesticBoxCore.get().installPackageAsUser(hostApk, USER_ID);
                         }

@@ -163,7 +163,7 @@ public final class FeaturesticBox {
                             "Extracting native .so libraries (" + (splitCount > 0 ? ("base.apk + " + splitCount + " splits") : "base.apk") + ")");
                     InstallResult res = FeaturesticBoxCore.get().installPackageAsUser(packageName, userId);
                     if (!isInstalled(packageName, userId)) {
-                        String hostApk = com.featurestic.box.FeaturesticBox.findHostApkPath(context, packageName);
+                        String hostApk = findHostApkPath(context, packageName);
                         if (hostApk != null && !hostApk.isEmpty()) {
                             res = FeaturesticBoxCore.get().installPackageAsUser(hostApk, userId);
                         }
