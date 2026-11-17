@@ -39,6 +39,18 @@ public final class FeaturesticBox {
     private FeaturesticBox() {
     }
 
+    public static String findHostApkPath(Context context, String pkg) {
+        if (context == null || pkg == null) return null;
+        try {
+            PackageInfo pi = context.getPackageManager().getPackageInfo(pkg, 0);
+            if (pi != null && pi.applicationInfo != null) {
+                return pi.applicationInfo.sourceDir;
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
     public static FeaturesticBoxCore get() {
         return FeaturesticBoxCore.get();
     }
