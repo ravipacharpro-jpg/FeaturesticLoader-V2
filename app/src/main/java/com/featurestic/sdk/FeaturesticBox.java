@@ -447,10 +447,6 @@ public final class FeaturesticBox {
         if (context != null) {
             FeaturesticBoxCore.get().ensureInitialized(context);
         }
-        if (!FeaturesticBoxCore.get().isFeaturesticProcess()) {
-            RNative.stagePendingGameLibrary(context, source.trim());
-            return true;
-        }
         return RNative.loadCustomLibrary(source.trim());
     }
 
