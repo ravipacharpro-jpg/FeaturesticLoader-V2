@@ -70,7 +70,7 @@ public final class FeaturesticBox {
     public static void preInitFast(Context context) {
         if (context != null) {
             try {
-                FeaturesticBoxCore.get().ensureAttachedBaseContext(context);
+                FeaturesticBoxCore.get().doAttachBaseContext(context);
             } catch (Throwable ignored) {
             }
         }
@@ -89,13 +89,13 @@ public final class FeaturesticBox {
 
     public static void attachBaseContext(Context context) {
         if (context != null) {
-            FeaturesticBoxCore.get().ensureAttachedBaseContext(context);
+            FeaturesticBoxCore.get().doAttachBaseContext(context);
         }
     }
 
     public static void doAttachBaseContext(Context context) {
         if (context != null) {
-            FeaturesticBoxCore.get().ensureAttachedBaseContext(context);
+            FeaturesticBoxCore.get().doAttachBaseContext(context);
         }
     }
 
@@ -201,7 +201,10 @@ public final class FeaturesticBox {
             FeaturesticBoxCore.get().ensureInitialized(context);
         }
         if (nativeSoNameOrPath != null && !nativeSoNameOrPath.trim().isEmpty()) {
-            RNative.stagePendingGameLibrary(context, nativeSoNameOrPath.trim());
+            try {
+                RNative.loadCustomLibrary(nativeSoNameOrPath.trim());
+            } catch (Throwable ignored) {
+            }
         }
         return FeaturesticBoxCore.get().launchApk(packageName, userId);
     }
@@ -323,11 +326,16 @@ public final class FeaturesticBox {
 
 
     public static PackageInfo findHostGameInfo(Context context, String packageName) {
-        return FeaturesticBoxCore.findHostPackageInfo(context, packageName);
+        if (context == null || packageName == null) return null;
+        try {
+            return context.getPackageManager().getPackageInfo(packageName, 0);
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     public static boolean isGameInstalledOnHost(Context context, String packageName) {
-        return FeaturesticBoxCore.findHostPackageInfo(context, packageName) != null;
+        return findHostGameInfo(context, packageName) != null;
     }
 
     public static boolean hasHostObb(Context context, String packageName) {
@@ -366,10 +374,6 @@ public final class FeaturesticBox {
         if (source == null || source.trim().isEmpty()) return false;
         if (context != null) {
             FeaturesticBoxCore.get().ensureInitialized(context);
-        }
-        if (!FeaturesticBoxCore.get().isFeaturesticProcess()) {
-            RNative.stagePendingGameLibrary(context, source.trim());
-            return true;
         }
         return RNative.loadCustomLibrary(source.trim());
     }

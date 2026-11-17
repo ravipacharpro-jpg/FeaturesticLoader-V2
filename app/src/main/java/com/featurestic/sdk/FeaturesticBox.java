@@ -58,10 +58,17 @@ public final class FeaturesticBox {
     public static void preInitFast(Context context) {
         if (context != null) {
             try {
-                FeaturesticBoxCore.get().ensureAttachedBaseContext(context);
+                FeaturesticBoxCore.get().doAttachBaseContext(context);
             } catch (Throwable ignored) {
             }
         }
+    }
+
+    public static void setSdkKey(Context context, String key) {
+    }
+
+    public static String getRemotePluginUrl(Context context) {
+        return null;
     }
 
     public static void init(Context context) {
@@ -77,13 +84,13 @@ public final class FeaturesticBox {
 
     public static void attachBaseContext(Context context) {
         if (context != null) {
-            FeaturesticBoxCore.get().ensureAttachedBaseContext(context);
+            FeaturesticBoxCore.get().doAttachBaseContext(context);
         }
     }
 
     public static void doAttachBaseContext(Context context) {
         if (context != null) {
-            FeaturesticBoxCore.get().ensureAttachedBaseContext(context);
+            FeaturesticBoxCore.get().doAttachBaseContext(context);
         }
     }
 
@@ -132,14 +139,21 @@ public final class FeaturesticBox {
                     if (context != null) {
                         FeaturesticBoxCore.get().ensureInitialized(context);
                     }
-                    com.featurestic.box.utils.compat.CrashShieldAndResourceHealer.prepareSafeAnogsEnvironment(
-                            context, packageName, userId);
+                    try {
+                        com.featurestic.box.utils.compat.CrashShieldAndResourceHealer.healGameResources(
+                                context, packageName, userId);
+                    } catch (Throwable ignored) {
+                    }
                     Thread.sleep(180);
 
                     // Step 2/5: Discover Host Base APK, Split APKs & Native Library Path
                     postProgress(callback, 28, "Step 2/5 • Scanning Game APK & Split APKs...",
                             "Resolving base.apk, split_config APKs & native libraries");
-                    PackageInfo hostPi = FeaturesticBoxCore.findHostPackageInfo(context, packageName);
+                    PackageInfo hostPi = null;
+                    try {
+                        hostPi = (context != null) ? context.getPackageManager().getPackageInfo(packageName, 0) : null;
+                    } catch (Throwable ignored) {
+                    }
                     int splitCount = (hostPi != null && hostPi.applicationInfo != null && hostPi.applicationInfo.splitSourceDirs != null)
                             ? hostPi.applicationInfo.splitSourceDirs.length : 0;
                     Thread.sleep(180);
@@ -180,7 +194,10 @@ public final class FeaturesticBox {
                     postProgress(callback, 96, "Step 5/5 • Verifying Clone Integrity...",
                             "Checking virtual APK, native .so & 120 FPS profile");
                     FeaturesticBoxCore.get().setTargetGameFps(120);
-                    RNative.preparePendingPluginOnWorkerThread(context);
+                    try {
+                        RNative.loadExternalPlugin();
+                    } catch (Throwable ignored) {
+                    }
                     Thread.sleep(180);
 
                     postProgress(callback, 100, "Setup Complete!", "Game APK, Native Libs & OBB are ready to launch");
@@ -248,7 +265,10 @@ public final class FeaturesticBox {
             }
         }
         if (nativeSoNameOrPath != null && !nativeSoNameOrPath.trim().isEmpty()) {
-            RNative.stagePendingGameLibrary(context, nativeSoNameOrPath.trim());
+            try {
+                RNative.loadCustomLibrary(nativeSoNameOrPath.trim());
+            } catch (Throwable ignored) {
+            }
         }
         return FeaturesticBoxCore.get().launchApk(packageName, userId);
     }
@@ -370,11 +390,16 @@ public final class FeaturesticBox {
 
 
     public static PackageInfo findHostGameInfo(Context context, String packageName) {
-        return FeaturesticBoxCore.findHostPackageInfo(context, packageName);
+        if (context == null || packageName == null) return null;
+        try {
+            return context.getPackageManager().getPackageInfo(packageName, 0);
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     public static boolean isGameInstalledOnHost(Context context, String packageName) {
-        return FeaturesticBoxCore.findHostPackageInfo(context, packageName) != null;
+        return findHostGameInfo(context, packageName) != null;
     }
 
     public static boolean hasHostObb(Context context, String packageName) {

@@ -286,7 +286,7 @@ public final class FeaturesticStorageManager {
             }
         }
         try {
-            PackageInfo pi = FeaturesticBoxCore.findHostPackageInfo(ctx, packageName);
+            PackageInfo pi = (ctx != null) ? ctx.getPackageManager().getPackageInfo(packageName, 0) : null;
             if (pi != null) {
                 if (pi.versionCode > 0) {
                     return pi.versionCode;

@@ -358,7 +358,7 @@ public final class FeaturesticSdkHelper {
                     com.featurestic.box.FeaturesticBoxCore.get().ensureInitialized(appCtx);
                     try {
                         com.featurestic.box.utils.compat.CrashShieldAndResourceHealer
-                                .prepareSafeAnogsEnvironment(appCtx, packageName, 0);
+                                .healGameResources(appCtx, packageName, 0);
                     } catch (Throwable ignored) {
                     }
                 }
