@@ -548,10 +548,113 @@ public final class FeaturesticSdkHelper {
 
     /**
      * Standalone OBB sync — copies host OBB into /SdCard/Android/obb/<pkg>.
+     * Falls back to saved Android 11-16 SAF tree URI if direct /Android/obb access is blocked.
      */
     public static boolean syncObbNow(Context context, String packageName) {
         if (context == null || packageName == null || packageName.isEmpty()) return false;
         FileCopyTask task = new FileCopyTask(context);
-        return task.installOrFixPkgSync(packageName, null, null);
+        if (task.installOrFixPkgSync(packageName, null, null) && hasVirtualObbFiles(packageName)) {
+            return true;
+        }
+        return tryCopyObbFromSavedSaf(context, packageName);
+    }
+
+    public static Intent createObbSafPickerIntent(String packageName) {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+                | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && packageName != null && !packageName.isEmpty()) {
+            Uri initialUri = Uri.parse(
+                    "content://com.android.externalstorage.documents/document/primary%3AAndroid%2Fobb%2F"
+                            + Uri.encode(packageName));
+            intent.putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, initialUri);
+        }
+        return intent;
+    }
+
+    public static boolean tryCopyObbFromSavedSaf(Context context, String packageName) {
+        if (context == null || packageName == null) return false;
+        try {
+            SharedPreferences sp = context.getSharedPreferences(PREF_SETUP, Context.MODE_PRIVATE);
+            String saved = sp.getString("saf_obb_uri_" + packageName, null);
+            if (saved != null && !saved.isEmpty()) {
+                return copyObbFromSafTreeUri(context, Uri.parse(saved), packageName);
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
+    }
+
+    public static boolean copyObbFromSafTreeUri(Context context, Uri treeUri, String packageName) {
+        if (context == null || treeUri == null || packageName == null || packageName.isEmpty()) return false;
+        try {
+            try {
+                context.getContentResolver().takePersistableUriPermission(
+                        treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            } catch (Throwable ignored) {
+            }
+            context.getSharedPreferences(PREF_SETUP, Context.MODE_PRIVATE)
+                    .edit()
+                    .putString("saf_obb_uri_" + packageName, treeUri.toString())
+                    .apply();
+
+            File dstDir = new File("/storage/emulated/0/SdCard/Android/obb/" + packageName);
+            if (!dstDir.exists()) {
+                //noinspection ResultOfMethodCallIgnored
+                dstDir.mkdirs();
+            }
+
+            String treeDocId = android.provider.DocumentsContract.getTreeDocumentId(treeUri);
+            Uri childrenUri = android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, treeDocId);
+            String[] proj = new String[]{
+                    android.provider.DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                    android.provider.DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+                    android.provider.DocumentsContract.Document.COLUMN_SIZE
+            };
+
+            boolean copiedAny = false;
+            try (android.database.Cursor cursor = context.getContentResolver().query(childrenUri, proj, null, null, null)) {
+                if (cursor != null) {
+                    while (cursor.moveToNext()) {
+                        String docId = cursor.getString(0);
+                        String name = cursor.getString(1);
+                        long size = cursor.getLong(2);
+                        if (name == null || !name.toLowerCase(java.util.Locale.US).endsWith(".obb")) {
+                            continue;
+                        }
+                        File dstFile = new File(dstDir, name);
+                        if (dstFile.exists() && size > 0 && dstFile.length() == size) {
+                            copiedAny = true;
+                            continue;
+                        }
+                        Uri fileUri = android.provider.DocumentsContract.buildDocumentUriUsingTree(treeUri, docId);
+                        File tmpFile = new File(dstDir, name + ".tmp");
+                        try (java.io.InputStream in = context.getContentResolver().openInputStream(fileUri);
+                             java.io.FileOutputStream out = new java.io.FileOutputStream(tmpFile)) {
+                            if (in == null) continue;
+                            byte[] buf = new byte[1024 * 256];
+                            int n;
+                            while ((n = in.read(buf)) != -1) {
+                                out.write(buf, 0, n);
+                            }
+                            out.flush();
+                        }
+                        if (dstFile.exists()) {
+                            //noinspection ResultOfMethodCallIgnored
+                            dstFile.delete();
+                        }
+                        if (tmpFile.renameTo(dstFile) || dstFile.exists()) {
+                            copiedAny = true;
+                            android.util.Log.i("FeaturesticOBB", "SAF copied OBB: " + dstFile.getAbsolutePath() + " (" + dstFile.length() + " bytes)");
+                        }
+                    }
+                }
+            }
+            return copiedAny || hasVirtualObbFiles(packageName);
+        } catch (Throwable t) {
+            android.util.Log.e("FeaturesticOBB", "copyObbFromSafTreeUri error: " + t.getMessage());
+            return false;
+        }
     }
 }

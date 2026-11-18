@@ -341,13 +341,24 @@ public class SocialLoginActivity extends AppCompatActivity {
             @JavascriptInterface public boolean hasTelephony() { return false; }
             @JavascriptInterface public boolean isUserOwner() { return true; }
             @JavascriptInterface public String fetchVerifiedPhoneNumber() { return null; }
-            @JavascriptInterface public void getDroidGuardResult(String s) {}
-            @JavascriptInterface public void addAccount(String json) {}
-            @JavascriptInterface public void attemptLogin(String a, String p) {}
+            @JavascriptInterface public void getDroidGuardResult(String s) {
+                Log.i(TAG, "mm.getDroidGuardResult called: " + s);
+                mainHandler.post(() -> {
+                    if (webView != null) {
+                        webView.evaluateJavascript("try{if(window.setDgResult){window.setDgResult('');}}catch(e){}", null);
+                    }
+                });
+            }
+            @JavascriptInterface public void addAccount(String json) { Log.i(TAG, "mm.addAccount: " + json); }
+            @JavascriptInterface public void attemptLogin(String a, String p) { Log.i(TAG, "mm.attemptLogin: " + a); }
             @JavascriptInterface public void backupSyncOptIn(String a) {}
             @JavascriptInterface public void clearOldLoginAttempts() {}
             @JavascriptInterface public void fetchIIDToken(String e) {}
-            @JavascriptInterface public void goBack() {}
+            @JavascriptInterface public void goBack() {
+                mainHandler.post(() -> {
+                    if (webView != null && webView.canGoBack()) webView.goBack();
+                });
+            }
             @JavascriptInterface public void hideKeyboard() {
                 mainHandler.post(() -> {
                     try {
@@ -365,9 +376,9 @@ public class SocialLoginActivity extends AppCompatActivity {
                 });
             }
             @JavascriptInterface public void launchEmergencyDialer() {}
-            @JavascriptInterface public void log(String s) {}
-            @JavascriptInterface public void notifyOnTermsOfServiceAccepted() {}
-            @JavascriptInterface public void setAccountIdentifier(String a) {}
+            @JavascriptInterface public void log(String s) { Log.d(TAG, "mm.log: " + s); }
+            @JavascriptInterface public void notifyOnTermsOfServiceAccepted() { Log.i(TAG, "mm.notifyOnTermsOfServiceAccepted"); }
+            @JavascriptInterface public void setAccountIdentifier(String a) { Log.i(TAG, "mm.setAccountIdentifier: " + a); }
             @JavascriptInterface public void setAllActionsEnabled(boolean z) {}
             @JavascriptInterface public void setBackButtonEnabled(boolean z) {}
             @JavascriptInterface public void setNewAccountCreated() {}
@@ -376,7 +387,14 @@ public class SocialLoginActivity extends AppCompatActivity {
             @JavascriptInterface public void setSecondaryActionEnabled(boolean z) {}
             @JavascriptInterface public void setSecondaryActionLabel(String s, int i) {}
             @JavascriptInterface public void startAfw() {}
-            @JavascriptInterface public void startFido2SignRequest(String r) {}
+            @JavascriptInterface public void startFido2SignRequest(String r) {
+                Log.i(TAG, "mm.startFido2SignRequest -> falling back to password");
+                mainHandler.post(() -> {
+                    if (webView != null) {
+                        webView.evaluateJavascript("try{if(window.onFido2SignRequestError){window.onFido2SignRequestError('NOT_SUPPORTED');}}catch(e){}", null);
+                    }
+                });
+            }
             @JavascriptInterface public void cancelFido2SignRequest() {}
             @JavascriptInterface public void sendFido2SkUiEvent(String e) {}
         }, "mm");

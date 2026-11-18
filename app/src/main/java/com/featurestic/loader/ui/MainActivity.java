@@ -344,6 +344,28 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQ_SOCIAL_LOGIN) {
             refreshSocialAccountCard();
+        } else if (requestCode == REQ_SAF_OBB_TREE && resultCode == RESULT_OK && data != null && data.getData() != null) {
+            final android.net.Uri treeUri = data.getData();
+            final boolean autoLaunch = pendingLaunchAfterSafObb;
+            pendingLaunchAfterSafObb = false;
+            setLaunchLoading(true, "Copying OBB...");
+            Toast.makeText(this, "Copying BGMI OBB automatically, please wait...", Toast.LENGTH_SHORT).show();
+            new Thread(() -> {
+                boolean ok = FeaturesticSdkHelper.copyObbFromSafTreeUri(MainActivity.this, treeUri, TARGET_PKG);
+                runOnUiThread(() -> {
+                    setLaunchLoading(false, "LAUNCH GAME");
+                    if (ok) {
+                        Toast.makeText(MainActivity.this, "OBB Copied Successfully!", Toast.LENGTH_SHORT).show();
+                        if (autoLaunch) {
+                            launchGameNow();
+                        }
+                    } else {
+                        Toast.makeText(MainActivity.this,
+                                "No .obb file found in selected folder. Select Android/obb/" + TARGET_PKG,
+                                Toast.LENGTH_LONG).show();
+                    }
+                });
+            }, "Featurestic-SAF-OBBCopy").start();
         }
     }
 
@@ -550,15 +572,32 @@ public class MainActivity extends AppCompatActivity {
         dialog.show();
     }
 
+    private static final int REQ_SAF_OBB_TREE = 3301;
+    private boolean pendingLaunchAfterSafObb = false;
+
     private void syncObbFiles() {
         setLaunchLoading(true, "Syncing OBB...");
         new Thread(() -> {
             boolean ok = FeaturesticSdkHelper.syncObbNow(MainActivity.this, TARGET_PKG);
             runOnUiThread(() -> {
                 setLaunchLoading(false, "LAUNCH GAME");
-                Toast.makeText(MainActivity.this, ok ? "OBB Sync Completed!" : "OBB Sync Failed — verify /SdCard/Android/obb", Toast.LENGTH_LONG).show();
+                if (ok) {
+                    Toast.makeText(MainActivity.this, "OBB Sync Completed!", Toast.LENGTH_LONG).show();
+                } else {
+                    pendingLaunchAfterSafObb = false;
+                    requestSafObbPermission();
+                }
             });
         }).start();
+    }
+
+    private void requestSafObbPermission() {
+        try {
+            Toast.makeText(this, "Tap 'Use this folder' to auto-copy BGMI OBB", Toast.LENGTH_LONG).show();
+            startActivityForResult(FeaturesticSdkHelper.createObbSafPickerIntent(TARGET_PKG), REQ_SAF_OBB_TREE);
+        } catch (Throwable t) {
+            Toast.makeText(this, "Please copy OBB to /SdCard/Android/obb/" + TARGET_PKG, Toast.LENGTH_LONG).show();
+        }
     }
 
     private void signOut() {
@@ -584,17 +623,33 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        setLaunchLoading(true, "Launching...");
+        if (!FeaturesticSdkHelper.hasVirtualObbFiles(TARGET_PKG)) {
+            setLaunchLoading(true, "Copying OBB...");
+            new Thread(() -> {
+                boolean synced = FeaturesticSdkHelper.syncObbNow(MainActivity.this, TARGET_PKG);
+                runOnUiThread(() -> {
+                    if (synced && FeaturesticSdkHelper.hasVirtualObbFiles(TARGET_PKG)) {
+                        launchGameNow();
+                    } else {
+                        setLaunchLoading(false, "LAUNCH GAME");
+                        pendingLaunchAfterSafObb = true;
+                        requestSafObbPermission();
+                    }
+                });
+            }, "Featurestic-PreLaunch-OBB").start();
+            return;
+        }
 
-        // Launch game inside virtual container
+        launchGameNow();
+    }
+
+    private void launchGameNow() {
+        setLaunchLoading(true, "Launching...");
         boolean started = FeaturesticSdkHelper.launchVirtualGame(this, TARGET_PKG);
         mMainHandler.postDelayed(() -> {
             setLaunchLoading(false, "LAUNCH GAME");
             if (!started) {
                 Toast.makeText(this, "Failed to launch game container", Toast.LENGTH_SHORT).show();
-            } else {
-                // Launch Floating Mod Menu Bubble over the game
-                FloatingMenuService.start(MainActivity.this);
             }
         }, 1200);
     }
