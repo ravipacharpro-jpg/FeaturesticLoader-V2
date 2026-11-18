@@ -236,6 +236,19 @@
                 android:gravity="center"
                 android:layout_marginTop="4dp" />
 
+            <TextView
+                android:id="@+id/btnSkipAccountSetup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Skip for now →"
+                android:textColor="#2563EB"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:padding="10dp"
+                android:layout_marginTop="8dp"
+                android:clickable="true"
+                android:focusable="true" />
+
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>

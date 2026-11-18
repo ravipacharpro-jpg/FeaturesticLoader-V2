@@ -49,6 +49,10 @@ public class AccountSetupActivity extends AppCompatActivity {
         findViewById(R.id.btnSetupFacebook).setOnClickListener(v -> launchProvider(SocialAccountManager.PROVIDER_FACEBOOK));
         findViewById(R.id.btnSetupTwitter).setOnClickListener(v -> launchProvider(SocialAccountManager.PROVIDER_TWITTER));
         findViewById(R.id.btnSetupDiscord).setOnClickListener(v -> launchProvider(SocialAccountManager.PROVIDER_DISCORD));
+        View skipBtn = findViewById(R.id.btnSkipAccountSetup);
+        if (skipBtn != null) {
+            skipBtn.setOnClickListener(v -> openDashboard());
+        }
     }
 
     private void setupEdgeToEdgeWindow() {

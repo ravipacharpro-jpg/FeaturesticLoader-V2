@@ -10,6 +10,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -27,6 +29,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.featurestic.box.compat.auth.MicroGGoogleAuthEngine;
 import com.featurestic.loader.auth.SocialAccountManager;
@@ -37,10 +42,12 @@ import java.util.Locale;
 
 /**
  * Clean full-portrait in-Loader login Activity for Google (MicroG), Twitter/X,
- * Facebook, and Discord. Once signed in here, virtual BGMI uses the saved
- * active account directly with 1-click and zero popups.
+ * Facebook, and Discord. Handles Android 15/16 WindowInsets & IME cleanly with
+ * zero black-screen artifacts.
  */
 public class SocialLoginActivity extends AppCompatActivity {
+
+    private static final String TAG = "FeaturesticSocial";
 
     public static final String EXTRA_PROVIDER = "provider";
     public static final String EXTRA_RESULT_LABEL = "result_label";
@@ -59,28 +66,39 @@ public class SocialLoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(Color.parseColor("#0F172A"));
+            getWindow().setStatusBarColor(Color.parseColor("#FFFFFF"));
+            getWindow().setNavigationBarColor(Color.parseColor("#FFFFFF"));
         }
 
         String extra = getIntent() != null ? getIntent().getStringExtra(EXTRA_PROVIDER) : null;
         if (extra != null && !extra.trim().isEmpty()) {
             provider = extra.trim().toLowerCase(Locale.US);
         }
+        Log.i(TAG, "Opening SocialLoginActivity for provider=" + provider);
 
-        LinearLayout root = new LinearLayout(this);
+        final LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Color.WHITE);
+        root.setFitsSystemWindows(true);
 
-        // Top Bar
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            int bottomPad = Math.max(sys.bottom, ime.bottom);
+            v.setPadding(sys.left, sys.top, sys.right, bottomPad);
+            return WindowInsetsCompat.CONSUMED;
+        });
+
+        // Clean Light Apple-Style Top Bar (matches status bar cleanly)
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-        topBar.setBackgroundColor(Color.parseColor("#0F172A"));
-        topBar.setPadding(dp(12), dp(12), dp(12), dp(12));
+        topBar.setBackgroundColor(Color.WHITE);
+        topBar.setPadding(dp(12), dp(10), dp(12), dp(10));
 
         TextView btnBack = new TextView(this);
         btnBack.setText("←");
-        btnBack.setTextColor(Color.WHITE);
+        btnBack.setTextColor(Color.parseColor("#0F172A"));
         btnBack.setTextSize(20f);
         btnBack.setTypeface(Typeface.DEFAULT_BOLD);
         btnBack.setPadding(dp(8), dp(4), dp(12), dp(4));
@@ -98,7 +116,7 @@ public class SocialLoginActivity extends AppCompatActivity {
 
         TextView tvTitle = new TextView(this);
         tvTitle.setText("Sign in with " + SocialAccountManager.getDisplayName(provider));
-        tvTitle.setTextColor(Color.WHITE);
+        tvTitle.setTextColor(Color.parseColor("#0F172A"));
         tvTitle.setTextSize(15.5f);
         tvTitle.setTypeface(Typeface.DEFAULT_BOLD);
         titleCol.addView(tvTitle);
@@ -107,7 +125,7 @@ public class SocialLoginActivity extends AppCompatActivity {
         tvSub.setText(SocialAccountManager.PROVIDER_GOOGLE.equals(provider)
                 ? "1-time secure setup • Saved for 1-click BGMI login"
                 : "Sign in once • Tap Done when logged in");
-        tvSub.setTextColor(Color.parseColor("#94A3B8"));
+        tvSub.setTextColor(Color.parseColor("#64748B"));
         tvSub.setTextSize(11.5f);
         titleCol.addView(tvSub);
         topBar.addView(titleCol, tcLp);
@@ -130,12 +148,18 @@ public class SocialLoginActivity extends AppCompatActivity {
         root.addView(topBar, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
+        View divider = new View(this);
+        divider.setBackgroundColor(Color.parseColor("#E2E8F0"));
+        root.addView(divider, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
+
         progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progressBar.setIndeterminate(true);
         root.addView(progressBar, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(3)));
 
         webView = new WebView(this);
+        webView.setBackgroundColor(Color.WHITE);
         webView.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         webView.setFocusable(true);
@@ -145,10 +169,26 @@ public class SocialLoginActivity extends AppCompatActivity {
         ws.setJavaScriptEnabled(true);
         ws.setDomStorageEnabled(true);
         ws.setDatabaseEnabled(true);
-        ws.setUseWideViewPort(true);
-        ws.setLoadWithOverviewMode(true);
+        ws.setUseWideViewPort(false);
+        ws.setLoadWithOverviewMode(false);
         ws.setSupportZoom(false);
         ws.setAllowFileAccess(false);
+        ws.setJavaScriptCanOpenWindowsAutomatically(true);
+        ws.setSupportMultipleWindows(true);
+        ws.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
+        if (Build.VERSION.SDK_INT >= 33) {
+            try {
+                ws.setAlgorithmicDarkeningAllowed(false);
+            } catch (Throwable ignored) {
+            }
+        } else if (Build.VERSION.SDK_INT >= 29) {
+            try {
+                @SuppressWarnings("deprecation")
+                int forceOff = WebSettings.FORCE_DARK_OFF;
+                ws.setForceDark(forceOff);
+            } catch (Throwable ignored) {
+            }
+        }
 
         CookieManager cm = CookieManager.getInstance();
         if (cm != null) {
@@ -168,6 +208,35 @@ public class SocialLoginActivity extends AppCompatActivity {
         setContentView(root);
     }
 
+    private WebChromeClient createSafeChromeClient() {
+        return new WebChromeClient() {
+            @Override
+            public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, android.os.Message resultMsg) {
+                try {
+                    WebView temp = new WebView(SocialLoginActivity.this);
+                    temp.setWebViewClient(new WebViewClient() {
+                        @Override
+                        public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest req) {
+                            if (req != null && req.getUrl() != null && webView != null) {
+                                String u = req.getUrl().toString();
+                                if (u.startsWith("http://") || u.startsWith("https://")) {
+                                    webView.loadUrl(u);
+                                }
+                            }
+                            return true;
+                        }
+                    });
+                    WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                    transport.setWebView(temp);
+                    resultMsg.sendToTarget();
+                    return true;
+                } catch (Throwable ignored) {
+                    return false;
+                }
+            }
+        };
+    }
+
     @SuppressLint("AddJavascriptInterface")
     private void setupGoogleMicroGWebView(WebSettings ws, final CookieManager cm) {
         String baseUa = ws.getUserAgentString();
@@ -178,7 +247,6 @@ public class SocialLoginActivity extends AppCompatActivity {
             ws.setUserAgentString(baseUa + MicroGGoogleAuthEngine.MAGIC_USER_AGENT_SUFFIX);
         }
 
-        // Clear only Google's oauth_token cookie so we can link fresh accounts without wiping FB/X/Discord cookies
         if (cm != null) {
             try {
                 cm.setCookie("https://accounts.google.com", "oauth_token=; Max-Age=0; Path=/");
@@ -193,7 +261,10 @@ public class SocialLoginActivity extends AppCompatActivity {
         final Runnable tryCompleteGoogle = () -> {
             if (exchanging || completed) return;
             String oauthToken = extractGoogleOAuthTokenCookie(cm);
-            if (oauthToken == null || oauthToken.isEmpty()) return;
+            if (oauthToken == null || oauthToken.isEmpty()) {
+                return;
+            }
+            Log.i(TAG, "Captured Google oauth_token cookie (len=" + oauthToken.length() + "), exchanging for Master Token...");
             exchanging = true;
             showBusyOverlay("Saving Google Account...", "Linking permanent 1-click session");
             new Thread(() -> {
@@ -202,6 +273,7 @@ public class SocialLoginActivity extends AppCompatActivity {
                             MicroGGoogleAuthEngine.exchangeOAuthCookieForMasterToken(
                                     getApplicationContext(), oauthToken);
                     SocialAccountManager.setActiveGoogleAccount(getApplicationContext(), rec.email);
+                    Log.i(TAG, "Google account linked successfully: " + rec.email);
                     mainHandler.post(() -> {
                         if (isFinishing() || isDestroyed() || completed) return;
                         completed = true;
@@ -214,6 +286,7 @@ public class SocialLoginActivity extends AppCompatActivity {
                         finish();
                     });
                 } catch (final Throwable t) {
+                    Log.e(TAG, "Google master token exchange failed: " + t.getMessage());
                     exchanging = false;
                     mainHandler.post(() -> {
                         if (isFinishing() || isDestroyed()) return;
@@ -225,8 +298,22 @@ public class SocialLoginActivity extends AppCompatActivity {
             }, "Loader-MicroG-Link").start();
         };
 
+        // Poll every 1s for oauth_token in case Google sets it via XHR without full page reload
+        final Runnable cookiePoller = new Runnable() {
+            @Override
+            public void run() {
+                if (isFinishing() || isDestroyed() || completed || exchanging) return;
+                if (extractGoogleOAuthTokenCookie(cm) != null) {
+                    tryCompleteGoogle.run();
+                    return;
+                }
+                mainHandler.postDelayed(this, 1000);
+            }
+        };
+        mainHandler.postDelayed(cookiePoller, 1500);
+
         webView.addJavascriptInterface(new Object() {
-            @JavascriptInterface public void closeView() { mainHandler.post(tryCompleteGoogle); }
+            @JavascriptInterface public void closeView() { Log.i(TAG, "mm.closeView() called"); mainHandler.post(tryCompleteGoogle); }
             @JavascriptInterface public void showView() { mainHandler.post(() -> progressBar.setVisibility(View.GONE)); }
             @JavascriptInterface public void skipLogin() { mainHandler.post(() -> { setResult(RESULT_CANCELED); finish(); }); }
             @JavascriptInterface public String getAccounts() {
@@ -294,13 +381,26 @@ public class SocialLoginActivity extends AppCompatActivity {
             @JavascriptInterface public void sendFido2SkUiEvent(String e) {}
         }, "mm");
 
-        webView.setWebChromeClient(new WebChromeClient());
+        webView.setWebChromeClient(createSafeChromeClient());
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri u = request != null ? request.getUrl() : null;
+                if (u != null) {
+                    String scheme = u.getScheme() != null ? u.getScheme().toLowerCase(Locale.US) : "";
+                    if (!"http".equals(scheme) && !"https".equals(scheme)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 progressBar.setVisibility(View.GONE);
                 if (url == null || exchanging || completed) return;
+                Log.i(TAG, "Google WebView finished: " + url);
                 try {
                     Uri uri = Uri.parse(url);
                     if ("close".equals(uri.getFragment())
@@ -317,6 +417,7 @@ public class SocialLoginActivity extends AppCompatActivity {
         });
 
         String setupUrl = MicroGGoogleAuthEngine.buildEmbeddedSetupUrl(Locale.getDefault(), null);
+        Log.i(TAG, "Loading Google EmbeddedSetup: " + setupUrl);
         webView.loadUrl(setupUrl);
     }
 
@@ -331,18 +432,40 @@ public class SocialLoginActivity extends AppCompatActivity {
         if (SocialAccountManager.PROVIDER_TWITTER.equals(provider)) {
             startUrl = "https://x.com/i/flow/login";
         } else if (SocialAccountManager.PROVIDER_FACEBOOK.equals(provider)) {
-            startUrl = "https://m.facebook.com/login.php";
+            startUrl = "https://m.facebook.com/";
         } else {
             startUrl = "https://discord.com/login";
         }
 
-        webView.setWebChromeClient(new WebChromeClient());
+        webView.setWebChromeClient(createSafeChromeClient());
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri u = request != null ? request.getUrl() : null;
+                if (u != null) {
+                    String scheme = u.getScheme() != null ? u.getScheme().toLowerCase(Locale.US) : "";
+                    if (!"http".equals(scheme) && !"https".equals(scheme)) {
+                        Log.d(TAG, "Blocked external scheme redirect: " + u);
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
+                super.doUpdateVisitedHistory(view, url, isReload);
+                if (!completed && url != null && detectSocialSessionActive(cm, url)) {
+                    finishSocialWebSuccess(null);
+                }
+            }
+
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 progressBar.setVisibility(View.GONE);
                 if (completed || url == null) return;
+                Log.i(TAG, provider + " WebView finished: " + url);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && cm != null) {
                     try { cm.flush(); } catch (Throwable ignored) {}
                 }
@@ -352,6 +475,7 @@ public class SocialLoginActivity extends AppCompatActivity {
             }
         });
 
+        Log.i(TAG, "Loading " + provider + " login URL: " + startUrl);
         webView.loadUrl(startUrl);
     }
 
@@ -395,6 +519,7 @@ public class SocialLoginActivity extends AppCompatActivity {
         } catch (Throwable ignored) {}
         String finalLabel = label != null ? label : SocialAccountManager.getDisplayName(provider) + " Connected";
         SocialAccountManager.markLinked(getApplicationContext(), provider, finalLabel);
+        Log.i(TAG, "Social provider linked: " + provider + " (" + finalLabel + ")");
         Toast.makeText(this, SocialAccountManager.getDisplayName(provider) + " Linked!", Toast.LENGTH_SHORT).show();
         Intent data = new Intent();
         data.putExtra(EXTRA_PROVIDER, provider);
@@ -409,7 +534,7 @@ public class SocialLoginActivity extends AppCompatActivity {
                 LinearLayout box = new LinearLayout(this);
                 box.setOrientation(LinearLayout.VERTICAL);
                 box.setGravity(Gravity.CENTER);
-                box.setBackgroundColor(Color.parseColor("#0F172A"));
+                box.setBackgroundColor(Color.WHITE);
                 box.setPadding(dp(28), dp(28), dp(28), dp(28));
 
                 ProgressBar pb = new ProgressBar(this);
@@ -418,7 +543,7 @@ public class SocialLoginActivity extends AppCompatActivity {
 
                 TextView t = new TextView(this);
                 t.setText(title);
-                t.setTextColor(Color.WHITE);
+                t.setTextColor(Color.parseColor("#0F172A"));
                 t.setTextSize(16f);
                 t.setTypeface(Typeface.DEFAULT_BOLD);
                 t.setGravity(Gravity.CENTER);
@@ -429,7 +554,7 @@ public class SocialLoginActivity extends AppCompatActivity {
 
                 TextView s = new TextView(this);
                 s.setText(subtitle);
-                s.setTextColor(Color.parseColor("#94A3B8"));
+                s.setTextColor(Color.parseColor("#64748B"));
                 s.setTextSize(13f);
                 s.setGravity(Gravity.CENTER);
                 box.addView(s);
