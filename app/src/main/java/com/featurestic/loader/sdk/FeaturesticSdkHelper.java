@@ -455,7 +455,7 @@ public final class FeaturesticSdkHelper {
      * Ensures APK is installed in FeaturesticBoxCore and OBB is copied via FileChannel.transferTo()
      * into /storage/emulated/0/SdCard/Android/obb/<pkg>/ before launching.
      */
-    public static boolean launchVirtualGame(Context context, String packageName) {
+    public static boolean launchVirtualGame(Context context, String packageName, final Runnable onFinished) {
         try {
             String savedKey = com.featurestic.loader.auth.PhpAuthManager.getSavedKey(context);
             if (savedKey != null && !savedKey.isEmpty()) {
@@ -540,10 +540,18 @@ public final class FeaturesticSdkHelper {
                             "Launch error: " + (t.getMessage() != null ? t.getMessage() : "Unknown"),
                             Toast.LENGTH_LONG).show());
                 }
+            } finally {
+                if (onFinished != null) {
+                    new Handler(Looper.getMainLooper()).post(onFinished);
+                }
             }
         }, "Featurestic-Game-Launch").start();
 
         return true;
+    }
+
+    public static boolean launchVirtualGame(Context context, String packageName) {
+        return launchVirtualGame(context, packageName, null);
     }
 
     /**

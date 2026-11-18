@@ -644,14 +644,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void launchGameNow() {
-        setLaunchLoading(true, "Launching...");
-        boolean started = FeaturesticSdkHelper.launchVirtualGame(this, TARGET_PKG);
-        mMainHandler.postDelayed(() -> {
+        setLaunchLoading(true, "Preparing...");
+        boolean started = FeaturesticSdkHelper.launchVirtualGame(this, TARGET_PKG, () -> {
             setLaunchLoading(false, "LAUNCH GAME");
-            if (!started) {
-                Toast.makeText(this, "Failed to launch game container", Toast.LENGTH_SHORT).show();
-            }
-        }, 1200);
+        });
+        if (!started) {
+            setLaunchLoading(false, "LAUNCH GAME");
+            Toast.makeText(this, "Failed to launch game container", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void setLaunchLoading(boolean loading, String label) {

@@ -292,7 +292,7 @@ public final class FeaturesticBox {
      * no_backup/native/FeaturesticPlugin.so where RNative.loadExternalPlugin() automatically
      * loads it inside the virtual game (:p0) process on libUE4/libanogs load.
      */
-    public static boolean stagePluginSoForVirtualProcess(Context context, String source) {
+    public static synchronized boolean stagePluginSoForVirtualProcess(Context context, String source) {
         if (context == null || source == null || source.trim().isEmpty()) return false;
         String src = source.trim();
         File nativeDir = new File(context.getNoBackupFilesDir(), "native");
