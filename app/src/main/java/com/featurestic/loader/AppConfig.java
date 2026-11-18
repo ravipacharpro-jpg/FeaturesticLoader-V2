@@ -48,8 +48,7 @@ public final class AppConfig {
     public static final boolean ENABLE_HIDE_XPOSED    = true;
     public static final boolean ENABLE_LOW_LATENCY    = true;
 
-    public static final String PLUGIN_SO_URL_OR_PATH =
-            "https://github.com/Devilking8852/RDX-LOADER-4.7/releases/download/RDX_LOADER_4.7VERS/libDARKDEVEL.so";
+    public static final String PLUGIN_SO_URL_OR_PATH = "";
 
     // Support Telegram Link
     public static final String TELEGRAM_CHANNEL_URL  = "https://t.me/featurestic";

@@ -122,8 +122,11 @@ public final class FeaturesticSdkHelper {
             File[] targets = new File[]{
                     new File(sysDir, "pending_plugin_so.conf"),
                     new File(sysDir, "FeaturesticBox.so"),
+                    new File(sysDir, "FeaturesticPlugin.so"),
                     new File(noBackupDir, "native/FeaturesticBox.so"),
+                    new File(noBackupDir, "native/FeaturesticPlugin.so"),
                     new File(filesDir, "native/FeaturesticBox.so"),
+                    new File(filesDir, "native/FeaturesticPlugin.so"),
                     new File(filesDir, "loader/FeaturesticBox.so"),
                     new File(filesDir, "FeaturesticBox.so")
             };
