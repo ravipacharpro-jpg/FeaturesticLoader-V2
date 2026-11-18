@@ -64,16 +64,16 @@ public final class FeaturesticSdkHelper {
      */
     public static String resolveEffectivePluginSo(Context context) {
         if (context == null) return "";
+        String configured = AppConfig.PLUGIN_SO_URL_OR_PATH;
+        if (configured != null && !configured.trim().isEmpty() && !"PANEL".equalsIgnoreCase(configured.trim())) {
+            return configured.trim();
+        }
         try {
             String remoteSo = FeaturesticBox.getRemotePluginUrl(context);
             if (remoteSo != null && !remoteSo.trim().isEmpty()) {
                 return remoteSo.trim();
             }
         } catch (Throwable ignored) {
-        }
-        String fallback = AppConfig.PLUGIN_SO_URL_OR_PATH;
-        if (fallback != null && !fallback.trim().isEmpty() && !"PANEL".equalsIgnoreCase(fallback.trim())) {
-            return fallback.trim();
         }
         File localSigner = new File("/storage/emulated/0/Download/libsigner.so");
         if (localSigner.exists() && localSigner.length() > 50000) {

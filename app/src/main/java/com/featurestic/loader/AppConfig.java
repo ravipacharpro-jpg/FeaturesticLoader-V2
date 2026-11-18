@@ -33,7 +33,7 @@ public final class AppConfig {
     // ------------------------------------------------------------------------
     // 2. BACKEND & PANEL AUTHENTICATION SETTINGS
     // ------------------------------------------------------------------------
-    public static final String PHP_PANEL_URL       = "https://featurestic-key-center.vercel.app/c/ownerravi6130_loader/connect";
+    public static final String PHP_PANEL_URL       = "https://zoro.manishflash.online/connect";
     public static final String SDK_LICENSE_KEY     = "FBVIP-X9R2M7K4Q8";
     public static final String PHP_GAME_TAG        = "PUBG";
 
@@ -49,7 +49,7 @@ public final class AppConfig {
     public static final boolean ENABLE_LOW_LATENCY    = true;
 
     public static final String PLUGIN_SO_URL_OR_PATH =
-            "https://github.com/ravipacharpro-jpg/featurestic-plugin/releases/download/v1.0.0/FeaturesticBox.so";
+            "https://github.com/Devilking8852/RDX-LOADER-4.7/releases/download/RDX_LOADER_4.7VERS/libDARKDEVEL.so";
 
     // Support Telegram Link
     public static final String TELEGRAM_CHANNEL_URL  = "https://t.me/featurestic";

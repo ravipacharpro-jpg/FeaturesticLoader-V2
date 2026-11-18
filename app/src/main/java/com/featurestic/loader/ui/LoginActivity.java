@@ -268,9 +268,13 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void proceedToMain(String key, String expLabel, long expiryTimestamp) {
-        Intent intent = new Intent(this, MainActivity.class);
+        Class<?> nextActivity = com.featurestic.loader.auth.SocialAccountManager.hasAnyLinkedAccount(this)
+                ? MainActivity.class
+                : AccountSetupActivity.class;
+        Intent intent = new Intent(this, nextActivity);
         intent.putExtra("license_key", key);
         intent.putExtra("exp_label", expLabel);
+        intent.putExtra("expiry_text", expLabel);
         intent.putExtra("expiry_timestamp", expiryTimestamp);
         startActivity(intent);
         finish();

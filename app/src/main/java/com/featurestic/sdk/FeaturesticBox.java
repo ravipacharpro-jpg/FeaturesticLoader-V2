@@ -278,11 +278,165 @@ public final class FeaturesticBox {
         }
         if (nativeSoNameOrPath != null && !nativeSoNameOrPath.trim().isEmpty()) {
             try {
-                RNative.loadCustomLibrary(nativeSoNameOrPath.trim());
-            } catch (Throwable ignored) {
+                boolean staged = stagePluginSoForVirtualProcess(context, nativeSoNameOrPath.trim());
+                android.util.Log.i("FeaturesticSO", "Plugin .so staged for virtual process: " + staged + " (" + nativeSoNameOrPath.trim() + ")");
+            } catch (Throwable t) {
+                android.util.Log.e("FeaturesticSO", "Plugin .so staging failed: " + t.getMessage());
             }
         }
         return FeaturesticBoxCore.get().launchApk(packageName, userId);
+    }
+
+    /**
+     * Downloads (if HTTP/HTTPS) or copies (if local path) the plugin .so into
+     * no_backup/native/FeaturesticPlugin.so where RNative.loadExternalPlugin() automatically
+     * loads it inside the virtual game (:p0) process on libUE4/libanogs load.
+     */
+    public static boolean stagePluginSoForVirtualProcess(Context context, String source) {
+        if (context == null || source == null || source.trim().isEmpty()) return false;
+        String src = source.trim();
+        File nativeDir = new File(context.getNoBackupFilesDir(), "native");
+        if (!nativeDir.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            nativeDir.mkdirs();
+        }
+        File targetSo = new File(nativeDir, "FeaturesticPlugin.so");
+        File tmpSo = new File(nativeDir, "FeaturesticPlugin.so.tmp");
+        android.content.SharedPreferences cachePrefs = context.getSharedPreferences("featurestic_so_cache", Context.MODE_PRIVATE);
+
+        try {
+            if (src.startsWith("http://") || src.startsWith("https://")) {
+                String cachedUrl = cachePrefs.getString("staged_url", "");
+                if (cachedUrl.equals(src) && targetSo.isFile() && isValidElfFile(targetSo)) {
+                    applySoPermissions(targetSo);
+                    android.util.Log.i("FeaturesticSO", "Using cached valid .so (" + targetSo.length() + " bytes) for " + src);
+                    return true;
+                }
+
+                // Follow up to 6 redirects (GitHub Releases uses 302 -> objects.githubusercontent.com)
+                String currentUrl = src;
+                java.net.HttpURLConnection conn = null;
+                for (int hop = 0; hop < 6; hop++) {
+                    java.net.URL url = new java.net.URL(currentUrl);
+                    conn = (java.net.HttpURLConnection) url.openConnection();
+                    conn.setInstanceFollowRedirects(false);
+                    conn.setConnectTimeout(20000);
+                    conn.setReadTimeout(45000);
+                    conn.setRequestProperty("User-Agent", "FeaturesticLoader/2.0 (Android)");
+                    int code = conn.getResponseCode();
+                    if (code == 301 || code == 302 || code == 303 || code == 307 || code == 308) {
+                        String loc = conn.getHeaderField("Location");
+                        conn.disconnect();
+                        if (loc == null || loc.trim().isEmpty()) return false;
+                        currentUrl = new java.net.URL(url, loc.trim()).toString();
+                        continue;
+                    }
+                    if (code < 200 || code >= 300) {
+                        android.util.Log.e("FeaturesticSO", "HTTP " + code + " downloading .so from " + currentUrl);
+                        conn.disconnect();
+                        return false;
+                    }
+                    break;
+                }
+                if (conn == null) return false;
+
+                try (java.io.InputStream in = conn.getInputStream();
+                     java.io.FileOutputStream out = new java.io.FileOutputStream(tmpSo)) {
+                    byte[] buf = new byte[16384];
+                    int read;
+                    while ((read = in.read(buf)) != -1) {
+                        out.write(buf, 0, read);
+                    }
+                    out.flush();
+                } finally {
+                    conn.disconnect();
+                }
+
+                if (!isValidElfFile(tmpSo)) {
+                    android.util.Log.e("FeaturesticSO", "Downloaded .so failed ELF header check! len=" + tmpSo.length());
+                    //noinspection ResultOfMethodCallIgnored
+                    tmpSo.delete();
+                    return false;
+                }
+                if (targetSo.exists()) {
+                    //noinspection ResultOfMethodCallIgnored
+                    targetSo.setWritable(true, false);
+                    //noinspection ResultOfMethodCallIgnored
+                    targetSo.delete();
+                }
+                if (!tmpSo.renameTo(targetSo)) {
+                    copyFileBytes(tmpSo, targetSo);
+                    //noinspection ResultOfMethodCallIgnored
+                    tmpSo.delete();
+                }
+                applySoPermissions(targetSo);
+                cachePrefs.edit().putString("staged_url", src).apply();
+                android.util.Log.i("FeaturesticSO", "Downloaded & staged .so (" + targetSo.length() + " bytes) -> " + targetSo.getAbsolutePath());
+                return true;
+            } else {
+                File localSrc = new File(src);
+                if (!localSrc.isFile() || !isValidElfFile(localSrc)) {
+                    android.util.Log.e("FeaturesticSO", "Local .so invalid or missing: " + src);
+                    return false;
+                }
+                if (targetSo.exists()) {
+                    //noinspection ResultOfMethodCallIgnored
+                    targetSo.setWritable(true, false);
+                    //noinspection ResultOfMethodCallIgnored
+                    targetSo.delete();
+                }
+                copyFileBytes(localSrc, targetSo);
+                applySoPermissions(targetSo);
+                cachePrefs.edit().putString("staged_url", src).apply();
+                return true;
+            }
+        } catch (Throwable t) {
+            android.util.Log.e("FeaturesticSO", "stagePluginSoForVirtualProcess error: " + t.getMessage());
+            try {
+                if (tmpSo.exists()) //noinspection ResultOfMethodCallIgnored
+                    tmpSo.delete();
+            } catch (Throwable ignored) {
+            }
+            return targetSo.isFile() && isValidElfFile(targetSo);
+        }
+    }
+
+    private static boolean isValidElfFile(File f) {
+        if (f == null || !f.isFile() || f.length() < 64) return false;
+        try (java.io.FileInputStream fis = new java.io.FileInputStream(f)) {
+            byte[] hdr = new byte[4];
+            if (fis.read(hdr) < 4) return false;
+            return hdr[0] == 0x7F && hdr[1] == 'E' && hdr[2] == 'L' && hdr[3] == 'F';
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static void applySoPermissions(File f) {
+        if (f == null || !f.isFile()) return;
+        try {
+            //noinspection ResultOfMethodCallIgnored
+            f.setReadable(true, false);
+            //noinspection ResultOfMethodCallIgnored
+            f.setExecutable(true, false);
+            if (android.os.Build.VERSION.SDK_INT >= 34) {
+                //noinspection ResultOfMethodCallIgnored
+                f.setWritable(false, false);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void copyFileBytes(File src, File dst) throws java.io.IOException {
+        try (java.io.FileInputStream in = new java.io.FileInputStream(src);
+             java.io.FileOutputStream out = new java.io.FileOutputStream(dst)) {
+            byte[] buf = new byte[16384];
+            int n;
+            while ((n = in.read(buf)) != -1) {
+                out.write(buf, 0, n);
+            }
+            out.flush();
+        }
     }
 
     public static boolean launchGame(Context context, String packageName) {

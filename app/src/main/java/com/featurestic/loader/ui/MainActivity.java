@@ -27,11 +27,14 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
 
+import com.featurestic.box.compat.auth.MicroGGoogleAuthEngine;
 import com.featurestic.loader.AppConfig;
 import com.featurestic.loader.R;
 import com.featurestic.loader.auth.PhpAuthManager;
+import com.featurestic.loader.auth.SocialAccountManager;
 import com.featurestic.loader.sdk.FeaturesticSdkHelper;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -39,6 +42,8 @@ import java.util.concurrent.TimeUnit;
  * High-contrast silver & frosted glass aesthetic matching Screenshot 2 & Video.
  */
 public class MainActivity extends AppCompatActivity {
+
+    private static final int REQ_SOCIAL_LOGIN = 3201;
 
     // Device Info Card Views
     private TextView tvDeviceModel;
@@ -57,6 +62,23 @@ public class MainActivity extends AppCompatActivity {
     private View btnLaunchContent;
     private TextView tvLaunchLabel;
     private ProgressBar pbLaunchProgress;
+
+    // Social Game Account Card Views
+    private TextView tvActiveAccountSummary;
+    private TextView tvAccountHintBadge;
+    private TextView tvAccountMoreLabel;
+    private View btnAccountTwitter;
+    private View btnAccountFacebook;
+    private View btnAccountMore;
+    private View btnAccountDiscord;
+    private View btnAccountGoogle;
+    private View layoutMoreAccounts;
+    private View dotTwitterActive;
+    private View dotFacebookActive;
+    private View dotMoreActive;
+    private View dotDiscordActive;
+    private View dotGoogleActive;
+    private boolean moreAccountsExpanded = false;
 
     // Hide ESP Switch (From Video)
     private SwitchCompat switchHideEsp;
@@ -90,12 +112,19 @@ public class MainActivity extends AppCompatActivity {
         initViews();
         setupDeviceInfo();
         setupGameCard();
+        setupSocialAccountCard();
         setupHideEspSwitch();
         setupSubscriptionTimer();
         setupListeners();
 
         // Check runtime permissions
         FeaturesticSdkHelper.requestRuntimePermissionsOnStart(this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshSocialAccountCard();
     }
 
     @Override
@@ -151,6 +180,21 @@ public class MainActivity extends AppCompatActivity {
         tvLaunchLabel = findViewById(R.id.tvLaunchLabel);
         pbLaunchProgress = findViewById(R.id.pbLaunchProgress);
 
+        tvActiveAccountSummary = findViewById(R.id.tvActiveAccountSummary);
+        tvAccountHintBadge = findViewById(R.id.tvAccountHintBadge);
+        tvAccountMoreLabel = findViewById(R.id.tvAccountMoreLabel);
+        btnAccountTwitter = findViewById(R.id.btnAccountTwitter);
+        btnAccountFacebook = findViewById(R.id.btnAccountFacebook);
+        btnAccountMore = findViewById(R.id.btnAccountMore);
+        btnAccountDiscord = findViewById(R.id.btnAccountDiscord);
+        btnAccountGoogle = findViewById(R.id.btnAccountGoogle);
+        layoutMoreAccounts = findViewById(R.id.layoutMoreAccounts);
+        dotTwitterActive = findViewById(R.id.dotTwitterActive);
+        dotFacebookActive = findViewById(R.id.dotFacebookActive);
+        dotMoreActive = findViewById(R.id.dotMoreActive);
+        dotDiscordActive = findViewById(R.id.dotDiscordActive);
+        dotGoogleActive = findViewById(R.id.dotGoogleActive);
+
         switchHideEsp = findViewById(R.id.switchHideEsp);
 
         tvCountdownDays = findViewById(R.id.tvCountdownDays);
@@ -159,6 +203,148 @@ public class MainActivity extends AppCompatActivity {
         tvCountdownSeconds = findViewById(R.id.tvCountdownSeconds);
 
         btnNotificationBell = findViewById(R.id.btnNotificationBell);
+    }
+
+    private void setupSocialAccountCard() {
+        if (btnAccountTwitter != null) {
+            btnAccountTwitter.setOnClickListener(v -> handleSocialProviderClick(SocialAccountManager.PROVIDER_TWITTER));
+        }
+        if (btnAccountFacebook != null) {
+            btnAccountFacebook.setOnClickListener(v -> handleSocialProviderClick(SocialAccountManager.PROVIDER_FACEBOOK));
+        }
+        if (btnAccountDiscord != null) {
+            btnAccountDiscord.setOnClickListener(v -> handleSocialProviderClick(SocialAccountManager.PROVIDER_DISCORD));
+        }
+        if (btnAccountGoogle != null) {
+            btnAccountGoogle.setOnClickListener(v -> handleSocialProviderClick(SocialAccountManager.PROVIDER_GOOGLE));
+        }
+        if (btnAccountMore != null) {
+            btnAccountMore.setOnClickListener(v -> {
+                moreAccountsExpanded = !moreAccountsExpanded;
+                if (layoutMoreAccounts != null) {
+                    layoutMoreAccounts.setVisibility(moreAccountsExpanded ? View.VISIBLE : View.GONE);
+                }
+                if (tvAccountMoreLabel != null) {
+                    tvAccountMoreLabel.setText(moreAccountsExpanded ? "Less" : "More");
+                }
+                refreshSocialAccountCard();
+            });
+        }
+        refreshSocialAccountCard();
+    }
+
+    private void refreshSocialAccountCard() {
+        boolean tw = SocialAccountManager.isProviderLinked(this, SocialAccountManager.PROVIDER_TWITTER);
+        boolean fb = SocialAccountManager.isProviderLinked(this, SocialAccountManager.PROVIDER_FACEBOOK);
+        boolean dc = SocialAccountManager.isProviderLinked(this, SocialAccountManager.PROVIDER_DISCORD);
+        boolean gg = SocialAccountManager.isProviderLinked(this, SocialAccountManager.PROVIDER_GOOGLE);
+
+        if (dotTwitterActive != null) dotTwitterActive.setVisibility(tw ? View.VISIBLE : View.GONE);
+        if (dotFacebookActive != null) dotFacebookActive.setVisibility(fb ? View.VISIBLE : View.GONE);
+        if (dotDiscordActive != null) dotDiscordActive.setVisibility(dc ? View.VISIBLE : View.GONE);
+        if (dotGoogleActive != null) dotGoogleActive.setVisibility(gg ? View.VISIBLE : View.GONE);
+        if (dotMoreActive != null) {
+            dotMoreActive.setVisibility((!moreAccountsExpanded && (dc || gg)) ? View.VISIBLE : View.GONE);
+        }
+
+        boolean any = tw || fb || dc || gg;
+        if (tvActiveAccountSummary != null) {
+            tvActiveAccountSummary.setText(SocialAccountManager.getActiveSummaryText(this));
+            tvActiveAccountSummary.setTextColor(Color.parseColor(any ? "#15803D" : "#B45309"));
+        }
+        if (tvAccountHintBadge != null) {
+            tvAccountHintBadge.setText(any ? "1-Click Ready" : "Tap to Link");
+            tvAccountHintBadge.setTextColor(Color.parseColor(any ? "#15803D" : "#B45309"));
+        }
+    }
+
+    private void handleSocialProviderClick(final String provider) {
+        if (SocialAccountManager.PROVIDER_GOOGLE.equals(provider)) {
+            List<MicroGGoogleAuthEngine.AccountRecord> saved = SocialAccountManager.getSavedGoogleAccounts(this);
+            if (saved == null || saved.isEmpty()) {
+                launchSocialLogin(provider);
+                return;
+            }
+            showGoogleAccountManagerDialog(saved);
+            return;
+        }
+
+        if (!SocialAccountManager.isProviderLinked(this, provider)) {
+            launchSocialLogin(provider);
+            return;
+        }
+
+        String name = SocialAccountManager.getDisplayName(provider);
+        String[] options = new String[]{
+                "Set " + name + " as Active",
+                "Switch / Re-Login " + name,
+                "Logout " + name
+        };
+        new AlertDialog.Builder(this)
+                .setTitle(name + " Account")
+                .setItems(options, (d, which) -> {
+                    if (which == 0) {
+                        SocialAccountManager.setActiveProvider(this, provider);
+                        refreshSocialAccountCard();
+                        Toast.makeText(this, name + " set as active!", Toast.LENGTH_SHORT).show();
+                    } else if (which == 1) {
+                        SocialAccountManager.clearProviderCookies(provider);
+                        launchSocialLogin(provider);
+                    } else if (which == 2) {
+                        SocialAccountManager.unlinkProvider(this, provider);
+                        refreshSocialAccountCard();
+                        Toast.makeText(this, name + " logged out", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void showGoogleAccountManagerDialog(final List<MicroGGoogleAuthEngine.AccountRecord> saved) {
+        String activeEmail = SocialAccountManager.getActiveGoogleEmail(this);
+        final String[] items = new String[saved.size() + 2];
+        for (int i = 0; i < saved.size(); i++) {
+            String em = saved.get(i).email;
+            boolean isActive = activeEmail != null && activeEmail.equalsIgnoreCase(em);
+            items[i] = (isActive ? "✓ " : "○ ") + em + (isActive ? " (Active)" : "");
+        }
+        items[saved.size()] = "+ Add another Google account";
+        items[saved.size() + 1] = "Remove active Google account";
+
+        new AlertDialog.Builder(this)
+                .setTitle("Google Accounts (1-Click BGMI)")
+                .setItems(items, (d, which) -> {
+                    if (which < saved.size()) {
+                        String chosen = saved.get(which).email;
+                        SocialAccountManager.setActiveGoogleAccount(this, chosen);
+                        refreshSocialAccountCard();
+                        Toast.makeText(this, "Active Google: " + chosen, Toast.LENGTH_SHORT).show();
+                    } else if (which == saved.size()) {
+                        launchSocialLogin(SocialAccountManager.PROVIDER_GOOGLE);
+                    } else {
+                        if (activeEmail != null) {
+                            SocialAccountManager.removeGoogleAccount(this, activeEmail);
+                            refreshSocialAccountCard();
+                            Toast.makeText(this, "Removed " + activeEmail, Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                })
+                .setNegativeButton("Close", null)
+                .show();
+    }
+
+    private void launchSocialLogin(String provider) {
+        Intent intent = new Intent(this, SocialLoginActivity.class);
+        intent.putExtra(SocialLoginActivity.EXTRA_PROVIDER, provider);
+        startActivityForResult(intent, REQ_SOCIAL_LOGIN);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_SOCIAL_LOGIN) {
+            refreshSocialAccountCard();
+        }
     }
 
     private void setupDeviceInfo() {
