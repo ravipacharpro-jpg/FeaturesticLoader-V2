@@ -75,10 +75,6 @@ public final class FeaturesticSdkHelper {
             }
         } catch (Throwable ignored) {
         }
-        File localSigner = new File("/storage/emulated/0/Download/libsigner.so");
-        if (localSigner.exists() && localSigner.length() > 50000) {
-            return localSigner.getAbsolutePath();
-        }
         return "";
     }
 

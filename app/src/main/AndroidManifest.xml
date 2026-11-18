@@ -64,6 +64,9 @@
 
     <application
         android:name=".LoaderApp"
+        android:allowNativeHeapPointerTagging="false"
+        android:gwpAsanMode="never"
+        android:memtagMode="off"
         android:requestLegacyExternalStorage="true"
         android:preserveLegacyExternalStorage="true"
         android:allowBackup="true"
