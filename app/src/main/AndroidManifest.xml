@@ -72,14 +72,14 @@
         android:allowBackup="true"
         android:extractNativeLibs="true"
         android:hardwareAccelerated="true"
-        android:largeHeap="true"
+        android:largeHeap="false"
         android:icon="@drawable/app_logo"
         android:label="@string/app_name"
         android:roundIcon="@drawable/app_logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.FeaturesticApple"
         android:usesCleartextTraffic="true"
-        tools:replace="android:label,android:theme,android:allowBackup">
+        tools:replace="android:label,android:theme,android:allowBackup,android:largeHeap">
 
         <activity
             android:name=".ui.LoginActivity"
