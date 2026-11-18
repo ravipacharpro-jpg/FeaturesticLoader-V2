@@ -49,6 +49,19 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // If panel auth is disabled, skip straight to game loader
+        if (!AppConfig.ENABLE_PANEL_AUTH) {
+            Intent intent = new Intent(this, com.featurestic.loader.ui.MainActivity.class);
+            intent.putExtra("license_key", "TEST-KEY");
+            intent.putExtra("exp_label", "Test Session");
+            intent.putExtra("expiry_text", "Test Session");
+            intent.putExtra("expiry_timestamp", 0L);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
         setupEdgeToEdgeWindow();
         setContentView(R.layout.activity_login);
 
