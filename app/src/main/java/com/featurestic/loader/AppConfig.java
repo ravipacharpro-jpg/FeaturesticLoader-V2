@@ -33,12 +33,13 @@ public final class AppConfig {
     // ------------------------------------------------------------------------
     // 2. BACKEND & PANEL AUTHENTICATION SETTINGS
     // ------------------------------------------------------------------------
-    public static final String PHP_PANEL_URL       = "https://zoro.manishflash.online/connect";
+    // Login link / panel URL removed for direct testing with random keys
+    public static final String PHP_PANEL_URL       = "";
     public static final String SDK_LICENSE_KEY     = "FBVX-X9R2M7K4Q8";
     public static final String PHP_GAME_TAG        = "PUBG";
 
-    // Set to false to skip panel/auth and go straight to game loader (for testing)
-    public static final boolean ENABLE_PANEL_AUTH  = false;
+    // Set to true so LoginActivity shows up and accepts random keys
+    public static final boolean ENABLE_PANEL_AUTH  = true;
 
     public static final boolean ALLOW_DEMO_FALLBACK_WHEN_UNCONFIGURED = false;
     public static final String MASTER_TEST_KEY     = "FEATURESTIC-VIP";

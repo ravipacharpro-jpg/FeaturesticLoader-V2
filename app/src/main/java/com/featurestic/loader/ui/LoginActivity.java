@@ -245,27 +245,21 @@ public class LoginActivity extends AppCompatActivity {
     private void performLogin() {
         if (isVerifying) return;
 
-        final String key = etLicenseKey.getText() != null ? etLicenseKey.getText().toString().trim() : "";
+        String key = etLicenseKey.getText() != null ? etLicenseKey.getText().toString().trim() : "";
         if (key.isEmpty()) {
-            Toast.makeText(this, "Please enter your license key", Toast.LENGTH_SHORT).show();
-            return;
+            key = "FEATURESTIC-TEST-" + (int) (1000 + Math.random() * 9000);
+            etLicenseKey.setText(key);
         }
 
-        // Master VIP fallback for instant developer access
-        if (AppConfig.MASTER_TEST_KEY.equalsIgnoreCase(key)) {
-            PhpAuthManager.saveSession(this, key, "999 DAYS", true);
-            proceedToMain(key, "999 DAYS", 0);
-            return;
-        }
-
+        final String finalKey = key;
         setLoading(true);
 
-        PhpAuthManager.verifyKey(this, key, new PhpAuthManager.AuthCallback() {
+        PhpAuthManager.verifyKey(this, finalKey, new PhpAuthManager.AuthCallback() {
             @Override
             public void onSuccess(final String licenseKey, final String expiryText, final String serverMessage) {
                 runOnUiThread(() -> {
                     setLoading(false);
-                    PhpAuthManager.saveSession(LoginActivity.this, licenseKey, expiryText, true);
+                    Toast.makeText(LoginActivity.this, "Login Successful! (" + licenseKey + ")", Toast.LENGTH_SHORT).show();
                     proceedToMain(licenseKey, expiryText, 0);
                 });
             }
