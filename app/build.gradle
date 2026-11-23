@@ -19,8 +19,13 @@ android {
     }
 
     signingConfigs {
-        debug {
-            if (file('../keystore/debug.keystore').exists()) {
+        release {
+            if (file('../keystore/release.keystore').exists()) {
+                storeFile file('../keystore/release.keystore')
+                storePassword 'featurestic2026'
+                keyAlias 'featurestic'
+                keyPassword 'featurestic2026'
+            } else if (file('../keystore/debug.keystore').exists()) {
                 storeFile file('../keystore/debug.keystore')
                 storePassword 'android'
                 keyAlias 'androiddebugkey'
@@ -33,11 +38,12 @@ android {
         debug {
             minifyEnabled false
             debuggable true
+            signingConfig signingConfigs.release
         }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
     }
 

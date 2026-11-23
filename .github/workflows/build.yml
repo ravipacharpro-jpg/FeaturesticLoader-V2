@@ -6,15 +6,20 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-apk:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -45,11 +50,16 @@ jobs:
         run: |
           python3 scripts/clean_background.py app/src/main/res/drawable/bg_soldier.jpg app/src/main/res/drawable/bg_soldier.jpg
 
-      - name: Setup Fixed Keystore
+      - name: Setup Fixed Permanent Keystore
         run: |
           mkdir -p keystore
-          if [ ! -f keystore/debug.keystore ]; then
-            keytool -genkeypair -alias androiddebugkey -keypass android -keystore keystore/debug.keystore -storepass android -dname "CN=Featurestic, OU=Mobile, O=Featurestic, L=City, S=State, C=US" -validity 10000 -keyalg RSA -keysize 2048
+          if [ ! -f keystore/release.keystore ]; then
+            keytool -genkeypair -alias featurestic -keypass featurestic2026 -keystore keystore/release.keystore -storepass featurestic2026 -dname "CN=Featurestic, OU=Mobile, O=Featurestic, L=City, S=State, C=US" -validity 10000 -keyalg RSA -keysize 2048
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add keystore/release.keystore
+            git commit -m "chore: persist permanent signing keystore [skip ci]" || true
+            git push origin master || true
           fi
 
       - name: Build Debug & Signed Release APK
@@ -57,10 +67,11 @@ jobs:
           chmod +x ./gradlew
           ./gradlew assembleDebug assembleRelease --no-daemon --stacktrace
 
-      - name: Upload Built APKs
+      - name: Upload Built APKs & Keystore
         uses: actions/upload-artifact@v4
         with:
           name: FeaturesticLoader-V2-APK
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/apk/release/app-release.apk
+            keystore/release.keystore

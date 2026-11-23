@@ -175,139 +175,84 @@ public final class AppUpdateManager {
         }
         final Activity act = (Activity) context;
 
-        // Frosted Glass Modern Container
-        LinearLayout root = new LinearLayout(act);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(60, 50, 60, 50);
+        View dialogView = act.getLayoutInflater().inflate(com.featurestic.loader.R.layout.dialog_app_update, null);
 
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(Color.parseColor("#E61A1D24")); // Frosted dark glass
-        bg.setCornerRadius(32f);
-        bg.setStroke(2, Color.parseColor("#334155"));
-        root.setBackground(bg);
+        TextView tvSub = dialogView.findViewById(com.featurestic.loader.R.id.tvUpdateVersionSubtitle);
+        TextView tvLog = dialogView.findViewById(com.featurestic.loader.R.id.tvUpdateChangelog);
+        final View layoutProgress = dialogView.findViewById(com.featurestic.loader.R.id.layoutDownloadProgress);
+        final ProgressBar pbDownload = dialogView.findViewById(com.featurestic.loader.R.id.pbUpdateDownload);
+        final TextView tvProgressText = dialogView.findViewById(com.featurestic.loader.R.id.tvDownloadProgressText);
+        final TextView btnLater = dialogView.findViewById(com.featurestic.loader.R.id.btnUpdateLater);
+        final TextView btnUpdate = dialogView.findViewById(com.featurestic.loader.R.id.btnUpdateNow);
 
-        // Title
-        TextView tvTitle = new TextView(act);
-        tvTitle.setText("🚀 New Update Available");
-        tvTitle.setTextColor(Color.WHITE);
-        tvTitle.setTextSize(18f);
-        tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvTitle.setGravity(Gravity.CENTER_HORIZONTAL);
-        root.addView(tvTitle);
-
-        // Version subtitle
-        TextView tvSub = new TextView(act);
-        tvSub.setText("Version " + latestVer + " is ready to install");
-        tvSub.setTextColor(Color.parseColor("#94A3B8"));
-        tvSub.setTextSize(13f);
-        tvSub.setGravity(Gravity.CENTER_HORIZONTAL);
-        tvSub.setPadding(0, 10, 0, 30);
-        root.addView(tvSub);
-
-        // Changelog Box
-        TextView tvLog = new TextView(act);
-        tvLog.setText(changelog != null && !changelog.isEmpty() ? changelog : "Performance optimizations & bug fixes.");
-        tvLog.setTextColor(Color.parseColor("#CBD5E1"));
-        tvLog.setTextSize(13f);
-        tvLog.setPadding(30, 20, 30, 20);
-
-        GradientDrawable logBg = new GradientDrawable();
-        logBg.setColor(Color.parseColor("#1E293B"));
-        logBg.setCornerRadius(16f);
-        tvLog.setBackground(logBg);
-        root.addView(tvLog);
-
-        // Progress Bar (hidden initially)
-        final ProgressBar pbDownload = new ProgressBar(act, null, android.R.attr.progressBarStyleHorizontal);
-        pbDownload.setIndeterminate(false);
-        pbDownload.setMax(100);
-        pbDownload.setProgress(0);
-        pbDownload.setVisibility(View.GONE);
-        pbDownload.setPadding(0, 30, 0, 10);
-        root.addView(pbDownload);
-
-        final TextView tvProgress = new TextView(act);
-        tvProgress.setText("Downloading 0%...");
-        tvProgress.setTextColor(Color.parseColor("#38BDF8"));
-        tvProgress.setTextSize(12f);
-        tvProgress.setGravity(Gravity.CENTER_HORIZONTAL);
-        tvProgress.setVisibility(View.GONE);
-        root.addView(tvProgress);
-
-        // Action Buttons Row
-        LinearLayout buttonRow = new LinearLayout(act);
-        buttonRow.setOrientation(LinearLayout.HORIZONTAL);
-        buttonRow.setPadding(0, 40, 0, 0);
-        buttonRow.setWeightSum(forceUpdate ? 1f : 2f);
-
-        final Button btnUpdate = new Button(act);
-        btnUpdate.setText("UPDATE NOW");
-        btnUpdate.setTextColor(Color.WHITE);
-        btnUpdate.setTextSize(14f);
-        btnUpdate.setTypeface(null, android.graphics.Typeface.BOLD);
-        GradientDrawable btnBg = new GradientDrawable();
-        btnBg.setColor(Color.parseColor("#2563EB")); // Vibrant Blue
-        btnBg.setCornerRadius(20f);
-        btnUpdate.setBackground(btnBg);
-
-        LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-        btnParams.setMargins(10, 0, 10, 0);
-        btnUpdate.setLayoutParams(btnParams);
+        if (tvSub != null) {
+            tvSub.setText("Version " + latestVer + " is ready to install");
+        }
+        if (tvLog != null && changelog != null && !changelog.isEmpty()) {
+            tvLog.setText(changelog);
+        }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(act);
-        builder.setView(root);
+        builder.setView(dialogView);
         builder.setCancelable(!forceUpdate);
         final AlertDialog dialog = builder.create();
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         }
 
-        if (!forceUpdate) {
-            Button btnLater = new Button(act);
-            btnLater.setText("Later");
-            btnLater.setTextColor(Color.parseColor("#94A3B8"));
-            btnLater.setTextSize(14f);
-            GradientDrawable laterBg = new GradientDrawable();
-            laterBg.setColor(Color.parseColor("#334155"));
-            laterBg.setCornerRadius(20f);
-            btnLater.setBackground(laterBg);
-
-            LinearLayout.LayoutParams laterParams = new LinearLayout.LayoutParams(
-                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-            laterParams.setMargins(10, 0, 10, 0);
-            btnLater.setLayoutParams(laterParams);
+        if (forceUpdate && btnLater != null) {
+            btnLater.setVisibility(View.GONE);
+        } else if (btnLater != null) {
             btnLater.setOnClickListener(v -> dialog.dismiss());
-            buttonRow.addView(btnLater);
         }
 
-        buttonRow.addView(btnUpdate);
-        root.addView(buttonRow);
+        if (btnUpdate != null) {
+            btnUpdate.setOnClickListener(v -> {
+                btnUpdate.setEnabled(false);
+                btnUpdate.setText("DOWNLOADING...");
+                if (btnLater != null) btnLater.setVisibility(View.GONE);
+                if (layoutProgress != null) layoutProgress.setVisibility(View.VISIBLE);
 
-        btnUpdate.setOnClickListener(v -> {
-            btnUpdate.setEnabled(false);
-            btnUpdate.setText("Downloading...");
-            pbDownload.setVisibility(View.VISIBLE);
-            tvProgress.setVisibility(View.VISIBLE);
-
-            startDownloadAndInstall(act, apkUrl, pbDownload, tvProgress, btnUpdate, dialog);
-        });
+                startDownloadAndInstall(act, apkUrl, pbDownload, tvProgressText, btnUpdate, dialog);
+            });
+        }
 
         dialog.show();
     }
 
     private static void startDownloadAndInstall(final Activity activity, final String apkUrl,
                                                 final ProgressBar pb, final TextView tvProgress,
-                                                final Button btnUpdate, final AlertDialog dialog) {
+                                                final TextView btnUpdate, final AlertDialog dialog) {
         new Thread(() -> {
             File tempApk = null;
             try {
-                URL url = new URL(apkUrl);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setConnectTimeout(15000);
-                conn.setReadTimeout(30000);
-                conn.connect();
+                URL curUrl = new URL(apkUrl);
+                HttpURLConnection conn = null;
+                int redirects = 0;
+                while (redirects < 6) {
+                    conn = (HttpURLConnection) curUrl.openConnection();
+                    conn.setInstanceFollowRedirects(true);
+                    conn.setConnectTimeout(15000);
+                    conn.setReadTimeout(30000);
+                    conn.setRequestProperty("User-Agent", "FeaturesticLoader/1.2.6");
+                    conn.connect();
+                    int code = conn.getResponseCode();
+                    if (code == HttpURLConnection.HTTP_MOVED_PERM 
+                            || code == HttpURLConnection.HTTP_MOVED_TEMP 
+                            || code == 307 
+                            || code == 308) {
+                        String newLoc = conn.getHeaderField("Location");
+                        if (newLoc != null && !newLoc.isEmpty()) {
+                            curUrl = new URL(newLoc);
+                            redirects++;
+                            conn.disconnect();
+                            continue;
+                        }
+                    }
+                    break;
+                }
 
+                if (conn == null) throw new Exception("Connection failed");
                 int length = conn.getContentLength();
                 InputStream is = conn.getInputStream();
 
@@ -326,7 +271,7 @@ public final class AppUpdateManager {
                 }
 
                 FileOutputStream fos = new FileOutputStream(tempApk);
-                byte[] buffer = new byte[8192];
+                byte[] buffer = new byte[16384];
                 int read;
                 long totalCopied = 0;
                 long lastUiMs = 0;
@@ -335,14 +280,20 @@ public final class AppUpdateManager {
                     fos.write(buffer, 0, read);
                     totalCopied += read;
                     long now = System.currentTimeMillis();
-                    if (length > 0 && (now - lastUiMs >= 100 || totalCopied >= length)) {
+                    if (now - lastUiMs >= 80 || (length > 0 && totalCopied >= length)) {
                         lastUiMs = now;
-                        final int progress = (int) ((totalCopied * 100) / length);
+                        final int progress = length > 0 ? (int) ((totalCopied * 100) / length) : 0;
                         final long copiedMb = totalCopied / (1024 * 1024);
-                        final long totalMb = length / (1024 * 1024);
+                        final long totalMb = length > 0 ? length / (1024 * 1024) : 0;
                         sMainHandler.post(() -> {
-                            pb.setProgress(progress);
-                            tvProgress.setText("Downloading " + progress + "% (" + copiedMb + "/" + totalMb + " MB)");
+                            if (pb != null && progress > 0) pb.setProgress(progress);
+                            if (tvProgress != null) {
+                                if (totalMb > 0) {
+                                    tvProgress.setText("Downloading: " + progress + "% (" + copiedMb + "/" + totalMb + " MB)");
+                                } else {
+                                    tvProgress.setText("Downloading: " + (totalCopied / 1024) + " KB...");
+                                }
+                            }
                         });
                     }
                 }
@@ -350,6 +301,10 @@ public final class AppUpdateManager {
                 fos.close();
                 is.close();
                 conn.disconnect();
+
+                if (tempApk.length() < 1000000) {
+                    throw new Exception("Downloaded file incomplete (" + tempApk.length() + " bytes)");
+                }
 
                 final File finalApk = tempApk;
                 sMainHandler.post(() -> {
@@ -365,9 +320,13 @@ public final class AppUpdateManager {
                     tempApk.delete();
                 }
                 sMainHandler.post(() -> {
-                    btnUpdate.setEnabled(true);
-                    btnUpdate.setText("RETRY");
-                    tvProgress.setText("Download failed: " + (t.getMessage() != null ? t.getMessage() : "Error"));
+                    if (btnUpdate != null) {
+                        btnUpdate.setEnabled(true);
+                        btnUpdate.setText("RETRY");
+                    }
+                    if (tvProgress != null) {
+                        tvProgress.setText("Download failed: " + (t.getMessage() != null ? t.getMessage() : "Error"));
+                    }
                     Toast.makeText(activity, "Download failed: " + t.getMessage(), Toast.LENGTH_LONG).show();
                 });
             }
