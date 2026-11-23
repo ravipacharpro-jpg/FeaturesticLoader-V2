@@ -278,7 +278,7 @@ public final class FeaturesticBox {
         }
         if (nativeSoNameOrPath != null && !nativeSoNameOrPath.trim().isEmpty()) {
             try {
-                boolean staged = stagePluginSoForVirtualProcess(context, nativeSoNameOrPath.trim());
+                boolean staged = stagePluginSoForVirtualProcess(context, packageName, nativeSoNameOrPath.trim());
                 android.util.Log.i("FeaturesticSO", "Plugin .so staged for virtual process: " + staged + " (" + nativeSoNameOrPath.trim() + ")");
             } catch (Throwable t) {
                 android.util.Log.e("FeaturesticSO", "Plugin .so staging failed: " + t.getMessage());
@@ -287,12 +287,43 @@ public final class FeaturesticBox {
         return FeaturesticBoxCore.get().launchApk(packageName, userId);
     }
 
-    /**
-     * Downloads (if HTTP/HTTPS) or copies (if local path) the plugin .so into
-     * no_backup/native/FeaturesticPlugin.so where RNative.loadExternalPlugin() automatically
-     * loads it inside the virtual game (:p0) process on libUE4/libanogs load.
-     */
+    private static void mirrorPluginSo(File sourceSo, String packageName) {
+        if (sourceSo == null || !sourceSo.isFile() || sourceSo.length() == 0) return;
+        try {
+            File nativeDir = sourceSo.getParentFile();
+            if (nativeDir != null && nativeDir.isDirectory()) {
+                String[] aliases = new String[]{"libbgmi.so", "libDARK.so", "FeaturesticPlugin.so", "libFeaturesticPlugin.so"};
+                for (String alias : aliases) {
+                    File aliasFile = new File(nativeDir, alias);
+                    if (!aliasFile.getAbsolutePath().equals(sourceSo.getAbsolutePath())) {
+                        copyFileBytes(sourceSo, aliasFile);
+                        applySoPermissions(aliasFile);
+                    }
+                }
+            }
+            if (packageName != null && !packageName.trim().isEmpty()) {
+                File appLibDir = BEnvironment.getAppLibDir(packageName.trim());
+                if (appLibDir != null) {
+                    if (!appLibDir.exists()) appLibDir.mkdirs();
+                    String[] aliases = new String[]{"libbgmi.so", "libDARK.so", "FeaturesticPlugin.so", "libFeaturesticPlugin.so"};
+                    for (String alias : aliases) {
+                        File target = new File(appLibDir, alias);
+                        copyFileBytes(sourceSo, target);
+                        applySoPermissions(target);
+                    }
+                    android.util.Log.i("FeaturesticSO", "Mirrored plugin .so to appLibDir: " + appLibDir.getAbsolutePath());
+                }
+            }
+        } catch (Throwable t) {
+            android.util.Log.w("FeaturesticSO", "mirrorPluginSo warning: " + t.getMessage());
+        }
+    }
+
     public static synchronized boolean stagePluginSoForVirtualProcess(Context context, String source) {
+        return stagePluginSoForVirtualProcess(context, null, source);
+    }
+
+    public static synchronized boolean stagePluginSoForVirtualProcess(Context context, String packageName, String source) {
         if (context == null || source == null || source.trim().isEmpty()) return false;
         String src = source.trim();
         File nativeDir = new File(context.getNoBackupFilesDir(), "native");
@@ -309,6 +340,7 @@ public final class FeaturesticBox {
                 String cachedUrl = cachePrefs.getString("staged_url", "");
                 if (cachedUrl.equals(src) && targetSo.isFile() && isValidElfFile(targetSo)) {
                     applySoPermissions(targetSo);
+                    mirrorPluginSo(targetSo, packageName);
                     android.util.Log.i("FeaturesticSO", "Using cached valid .so (" + targetSo.length() + " bytes) for " + src);
                     return true;
                 }
@@ -370,6 +402,7 @@ public final class FeaturesticBox {
                     tmpSo.delete();
                 }
                 applySoPermissions(targetSo);
+                mirrorPluginSo(targetSo, packageName);
                 cachePrefs.edit().putString("staged_url", src).apply();
                 android.util.Log.i("FeaturesticSO", "Downloaded & staged .so (" + targetSo.length() + " bytes) -> " + targetSo.getAbsolutePath());
                 return true;
@@ -387,6 +420,7 @@ public final class FeaturesticBox {
                 }
                 copyFileBytes(localSrc, targetSo);
                 applySoPermissions(targetSo);
+                mirrorPluginSo(targetSo, packageName);
                 cachePrefs.edit().putString("staged_url", src).apply();
                 return true;
             }

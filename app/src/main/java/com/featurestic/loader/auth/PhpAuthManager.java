@@ -152,9 +152,12 @@ public class PhpAuthManager {
                     java.io.File dir = new java.io.File(base, pkg);
                     if (!dir.exists()) dir.mkdirs();
                     if (dir.isDirectory()) {
-                        java.io.File lic = new java.io.File(dir, "teamdark.lic");
-                        try (java.io.FileOutputStream fos = new java.io.FileOutputStream(lic)) {
-                            fos.write(cleanKey.getBytes(StandardCharsets.UTF_8));
+                        String[] licNames = new String[]{"key.lic", "teamdark.lic", "license.lic", "user.lic"};
+                        for (String licName : licNames) {
+                            java.io.File lic = new java.io.File(dir, licName);
+                            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(lic)) {
+                                fos.write(cleanKey.getBytes(StandardCharsets.UTF_8));
+                            }
                         }
                     }
                 } catch (Throwable ignored) {
