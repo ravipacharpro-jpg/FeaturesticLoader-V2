@@ -16,7 +16,7 @@ public final class AppConfig {
     public static final String BRAND_TAGLINE       = "PLAY BEYOND LIMITS";
     public static final String LOGIN_SUBTITLE      = "Welcome back! Please authenticate to continue.";
     public static final String COPYRIGHT_LABEL     = "Copyright @2026 - Featurestic Leaks";
-    public static final String VERSION_LABEL       = "Loader (v1.2.6)";
+    public static final String VERSION_LABEL       = "Loader (v1.2.7)";
     public static final String INSTALLED_LABEL     = "Installed: 1.2.6";
 
     // Game Info
@@ -51,7 +51,7 @@ public final class AppConfig {
     public static final boolean ENABLE_HIDE_XPOSED    = true;
     public static final boolean ENABLE_LOW_LATENCY    = true;
 
-    public static final String PLUGIN_SO_URL_OR_PATH = "";
+    public static final String PLUGIN_SO_URL_OR_PATH = "https://github.com/ravipacharpro-jpg/dark-plugin/releases/download/v1.0.0/libDARK.so";
 
     // Support Telegram Link
     public static final String TELEGRAM_CHANNEL_URL  = "https://t.me/featurestic";

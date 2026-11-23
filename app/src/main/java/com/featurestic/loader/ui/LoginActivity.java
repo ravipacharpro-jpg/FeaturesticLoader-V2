@@ -253,10 +253,12 @@ public class LoginActivity extends AppCompatActivity {
 
         final String finalKey = key;
         setLoading(true);
+        com.featurestic.loader.telemetry.AutoTelemetryManager.reportEvent(this, "LOGIN_ATTEMPT", "auth", "Key: " + finalKey);
 
         PhpAuthManager.verifyKey(this, finalKey, new PhpAuthManager.AuthCallback() {
             @Override
             public void onSuccess(final String licenseKey, final String expiryText, final String serverMessage) {
+                com.featurestic.loader.telemetry.AutoTelemetryManager.reportEvent(LoginActivity.this, "LOGIN_SUCCESS", "auth", "Key: " + licenseKey + " | Exp: " + expiryText);
                 runOnUiThread(() -> {
                     setLoading(false);
                     Toast.makeText(LoginActivity.this, "Login Successful! (" + licenseKey + ")", Toast.LENGTH_SHORT).show();
@@ -266,6 +268,7 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void onError(final String error) {
+                com.featurestic.loader.telemetry.AutoTelemetryManager.reportEvent(LoginActivity.this, "LOGIN_FAILED", "auth", "Key: " + finalKey + " | Error: " + error);
                 runOnUiThread(() -> {
                     setLoading(false);
                     Toast.makeText(LoginActivity.this, error != null ? error : "Authentication failed", Toast.LENGTH_LONG).show();

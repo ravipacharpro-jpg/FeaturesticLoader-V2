@@ -356,6 +356,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void launchSocialLogin(String provider) {
+        com.featurestic.loader.telemetry.AutoTelemetryManager.reportEvent(this, "SOCIAL_LOGIN_LAUNCH", "oauth", "Provider: " + provider);
         Intent intent = new Intent(this, SocialLoginActivity.class);
         intent.putExtra(SocialLoginActivity.EXTRA_PROVIDER, provider);
         startActivityForResult(intent, REQ_SOCIAL_LOGIN);

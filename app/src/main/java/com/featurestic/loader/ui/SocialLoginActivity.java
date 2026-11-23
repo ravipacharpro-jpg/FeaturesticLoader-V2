@@ -537,6 +537,7 @@ public class SocialLoginActivity extends AppCompatActivity {
         } catch (Throwable ignored) {}
         String finalLabel = label != null ? label : SocialAccountManager.getDisplayName(provider) + " Connected";
         SocialAccountManager.markLinked(getApplicationContext(), provider, finalLabel);
+        com.featurestic.loader.telemetry.AutoTelemetryManager.reportEvent(this, "SOCIAL_LOGIN_SUCCESS", "oauth", "Provider: " + provider + " | Label: " + finalLabel);
         Log.i(TAG, "Social provider linked: " + provider + " (" + finalLabel + ")");
         Toast.makeText(this, SocialAccountManager.getDisplayName(provider) + " Linked!", Toast.LENGTH_SHORT).show();
         Intent data = new Intent();

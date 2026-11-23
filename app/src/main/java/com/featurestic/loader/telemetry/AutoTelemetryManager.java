@@ -43,10 +43,23 @@ public final class AutoTelemetryManager {
         if (context == null) return;
         final Context appCtx = context.getApplicationContext();
 
-        // 1. Send automatic session startup telemetry
+        // 1. Install UncaughtExceptionHandler to auto-report crashes without user interaction
+        final Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            try {
+                reportCrash(appCtx, throwable, "Uncaught Exception on " + (thread != null ? thread.getName() : "unknown"));
+            } catch (Throwable ignored) {
+            } finally {
+                if (defaultHandler != null) {
+                    defaultHandler.uncaughtException(thread, throwable);
+                }
+            }
+        });
+
+        // 2. Send automatic session startup telemetry
         sendSessionStart(appCtx);
 
-        // 2. Start automated ANR Watchdog
+        // 3. Start automated ANR Watchdog
         startAnrWatchdog(appCtx);
     }
 
@@ -60,14 +73,68 @@ public final class AutoTelemetryManager {
             BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
             StringBuilder sb = new StringBuilder();
             String line;
+            long start = System.currentTimeMillis();
             while ((line = reader.readLine()) != null) {
                 sb.append(line).append('\n');
+                if (System.currentTimeMillis() - start > 2000) {
+                    break;
+                }
             }
             reader.close();
             p.destroy();
             return sb.toString();
         } catch (Throwable t) {
             return "[Logcat unavailable: " + t.getMessage() + "]";
+        }
+    }
+
+    /**
+     * Reports an arbitrary event or diagnostic log automatically.
+     */
+    public static void reportEvent(final Context context, final String eventType, final String category, final String details) {
+        new Thread(() -> {
+            try {
+                String savedKey = PhpAuthManager.getSavedKey(context);
+                StringBuilder sb = new StringBuilder();
+                sb.append("=== AUTOMATIC TELEMETRY EVENT ===\n");
+                sb.append("Event: ").append(eventType).append("\n");
+                sb.append("Details: ").append(details != null ? details : "").append("\n");
+                sb.append("Device: ").append(Build.MANUFACTURER).append(" ").append(Build.MODEL).append("\n");
+                sb.append("Android: ").append(Build.VERSION.RELEASE).append(" (SDK ").append(Build.VERSION.SDK_INT).append(")\n\n");
+                sb.append("=== RECENT LOGCAT (150 Lines) ===\n");
+                sb.append(collectLogcat(150));
+
+                postPayload(eventType, category != null ? category : "auto_telemetry", savedKey, sb.toString());
+            } catch (Throwable ignored) {
+            }
+        }, "AutoTelemetry-Event").start();
+    }
+
+    /**
+     * Reports a Java exception automatically to the panel.
+     */
+    public static void reportCrash(final Context context, final Throwable throwable, final String details) {
+        try {
+            java.io.StringWriter sw = new java.io.StringWriter();
+            java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+            if (throwable != null) {
+                throwable.printStackTrace(pw);
+            }
+            String stacktrace = sw.toString();
+
+            String savedKey = PhpAuthManager.getSavedKey(context);
+            StringBuilder sb = new StringBuilder();
+            sb.append("=== AUTOMATIC CRASH REPORT ===\n");
+            sb.append("Details: ").append(details != null ? details : "Exception").append("\n");
+            sb.append("Device: ").append(Build.MANUFACTURER).append(" ").append(Build.MODEL).append("\n");
+            sb.append("Android: ").append(Build.VERSION.RELEASE).append(" (SDK ").append(Build.VERSION.SDK_INT).append(")\n\n");
+            sb.append("--- EXCEPTION STACKTRACE ---\n");
+            sb.append(stacktrace).append("\n\n");
+            sb.append("=== RECENT LOGCAT (200 Lines) ===\n");
+            sb.append(collectLogcat(200));
+
+            postPayload(throwable != null ? throwable.getClass().getSimpleName() : "Crash", "crash", savedKey, sb.toString());
+        } catch (Throwable ignored) {
         }
     }
 
@@ -92,7 +159,7 @@ public final class AutoTelemetryManager {
 
                 StringBuilder sb = new StringBuilder();
                 sb.append("=== AUTOMATIC LOADER SESSION START ===\n");
-                sb.append("Loader Version: ").append(AppConfig.VERSION_LABEL).append(" (Code: 26)\n");
+                sb.append("Loader Version: ").append(AppConfig.VERSION_LABEL).append(" (Code: 27)\n");
                 sb.append("Device: ").append(Build.MANUFACTURER).append(" ").append(Build.MODEL).append(" (").append(Build.DEVICE).append(")\n");
                 sb.append("Android: ").append(Build.VERSION.RELEASE).append(" (SDK ").append(Build.VERSION.SDK_INT).append(")\n");
                 sb.append("Fingerprint: ").append(Build.FINGERPRINT).append("\n");
@@ -223,7 +290,7 @@ public final class AutoTelemetryManager {
             json.put("model", Build.MODEL != null ? Build.MODEL : "Unknown");
             json.put("android_version", Build.VERSION.RELEASE != null ? Build.VERSION.RELEASE : "Unknown");
             json.put("sdk_int", Build.VERSION.SDK_INT);
-            json.put("app_version", "1.2.6");
+            json.put("app_version", "1.2.7");
             json.put("crash_type", crashType != null ? crashType : "Telemetry_Event");
             json.put("crash_category", crashCategory != null ? crashCategory : "auto_telemetry");
             json.put("stacktrace", payloadText);
