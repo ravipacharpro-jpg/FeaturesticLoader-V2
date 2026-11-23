@@ -16,13 +16,13 @@ public final class AppConfig {
     public static final String BRAND_TAGLINE       = "PLAY BEYOND LIMITS";
     public static final String LOGIN_SUBTITLE      = "Welcome back! Please authenticate to continue.";
     public static final String COPYRIGHT_LABEL     = "Copyright @2026 - Featurestic Leaks";
-    public static final String VERSION_LABEL       = "Loader (v1.2.7)";
-    public static final String INSTALLED_LABEL     = "Installed: 1.2.6";
+    public static final String VERSION_LABEL       = "Loader (v1.2.8)";
+    public static final String INSTALLED_LABEL     = "Installed: 1.2.7";
 
     // Game Info
     public static final String TARGET_GAME_NAME    = "Battlegrounds India";
     public static final String TARGET_PACKAGE_NAME = "com.pubg.imobile";
-    public static final String SUPPORTED_VERSION   = "4.6.0";
+    public static final String SUPPORTED_VERSION   = "4.7.0";
 
     public static final String PKG_BGMI   = "com.pubg.imobile";
     public static final String PKG_GLOBAL = "com.tencent.ig";

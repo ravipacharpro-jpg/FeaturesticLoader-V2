@@ -96,8 +96,24 @@ public final class AppUpdateManager {
                     String changelog = json.optString("changelog", "Bug fixes and improvements.");
                     boolean forceUpdate = json.optBoolean("force_update", false);
 
+                    // Check System Broadcast Notice from Panel
+                    String broadcastNotice = json.optString("broadcast_notice", "");
+                    int broadcastId = json.optInt("broadcast_notice_id", 0);
+                    if (!broadcastNotice.trim().isEmpty()) {
+                        boolean isNewNotice = com.featurestic.loader.notification.FeaturesticNotifier.checkAndNotifyBroadcast(
+                                context, broadcastNotice.trim(), broadcastId);
+                        if (isNewNotice && context instanceof Activity) {
+                            showBroadcastDialog(context, broadcastNotice.trim());
+                        }
+                    }
+
                     // STRICT CHECK: Only trigger if server says update available AND local version is strictly older
                     if (hasUpdate && apkUrl != null && !apkUrl.trim().isEmpty() && isNewerVersion(currentVer, latestVer)) {
+                        // Push System Status Bar Notification
+                        com.featurestic.loader.notification.FeaturesticNotifier.showUpdateNotification(
+                                context, latestVer, apkUrl, changelog);
+
+                        // Show In-App Frosted Update Dialog if user is looking at the screen
                         sMainHandler.post(() -> showUpdateDialog(context, latestVer, apkUrl, changelog, forceUpdate));
                     } else if (manualCheck) {
                         sMainHandler.post(() -> Toast.makeText(context,
@@ -167,7 +183,24 @@ public final class AppUpdateManager {
         return "1.2.5";
     }
 
-    private static void showUpdateDialog(final Context context, final String latestVer,
+    public static void showBroadcastDialog(final Context context, final String broadcastMessage) {
+        if (!(context instanceof Activity) || ((Activity) context).isFinishing()) {
+            return;
+        }
+        final Activity act = (Activity) context;
+        sMainHandler.post(() -> {
+            try {
+                AlertDialog.Builder builder = new AlertDialog.Builder(act);
+                builder.setTitle("📢 System Announcement");
+                builder.setMessage(broadcastMessage);
+                builder.setPositiveButton("UNDERSTOOD", (d, w) -> d.dismiss());
+                builder.setCancelable(true);
+                builder.show();
+            } catch (Throwable ignored) {}
+        });
+    }
+
+    public static void showUpdateDialog(final Context context, final String latestVer,
                                          final String apkUrl, final String changelog,
                                          final boolean forceUpdate) {
         if (!(context instanceof Activity) || ((Activity) context).isFinishing()) {

@@ -120,8 +120,35 @@ public class MainActivity extends AppCompatActivity {
         setupSubscriptionTimer();
         setupListeners();
 
+        // Initialize Notification Channels for Update Alerts & System Broadcasts
+        com.featurestic.loader.notification.FeaturesticNotifier.initChannels(this);
+        handleNotificationIntent(getIntent());
+
         // Check runtime permissions
         FeaturesticSdkHelper.requestRuntimePermissionsOnStart(this);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleNotificationIntent(intent);
+    }
+
+    private void handleNotificationIntent(Intent intent) {
+        if (intent == null) return;
+        if (intent.getBooleanExtra(com.featurestic.loader.notification.FeaturesticNotifier.EXTRA_ACTION_UPDATE, false)) {
+            String latestVer = intent.getStringExtra(com.featurestic.loader.notification.FeaturesticNotifier.EXTRA_LATEST_VER);
+            String apkUrl = intent.getStringExtra(com.featurestic.loader.notification.FeaturesticNotifier.EXTRA_APK_URL);
+            String changelog = intent.getStringExtra(com.featurestic.loader.notification.FeaturesticNotifier.EXTRA_CHANGELOG);
+            if (apkUrl != null && !apkUrl.isEmpty()) {
+                AppUpdateManager.showUpdateDialog(this, latestVer, apkUrl, changelog, false);
+            }
+        }
+        String broadcastMsg = intent.getStringExtra(com.featurestic.loader.notification.FeaturesticNotifier.EXTRA_BROADCAST_MSG);
+        if (broadcastMsg != null && !broadcastMsg.trim().isEmpty()) {
+            AppUpdateManager.showBroadcastDialog(this, broadcastMsg.trim());
+        }
     }
 
     @Override
@@ -598,9 +625,11 @@ public class MainActivity extends AppCompatActivity {
             btnSendLogs.setOnClickListener(v -> {
                 dialog.dismiss();
                 Toast.makeText(MainActivity.this, "Uploading diagnostic logs to developer...", Toast.LENGTH_SHORT).show();
-                CrashHandler.reportDiagnosticLogs("Manual diagnostic logs from MainActivity options menu", () -> {
-                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "✅ Diagnostic logs uploaded successfully!", Toast.LENGTH_LONG).show());
-                });
+                new Thread(() -> {
+                    CrashHandler.reportDiagnosticLogs("Manual diagnostic logs from MainActivity options menu", () -> {
+                        runOnUiThread(() -> Toast.makeText(MainActivity.this, "✅ Diagnostic logs uploaded successfully!", Toast.LENGTH_LONG).show());
+                    });
+                }, "Featurestic-ManualLogs").start();
             });
         }
 

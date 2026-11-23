@@ -251,7 +251,7 @@
                             android:id="@+id/tvGameVersion"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Version : 4.6.0"
+                            android:text="Version : 4.7.0"
                             android:textColor="#0F172A"
                             android:textSize="13sp"
                             android:textStyle="bold"
@@ -261,7 +261,7 @@
                             android:id="@+id/tvGameSupported"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Supported : 4.6.0"
+                            android:text="Supported : 4.7.0"
                             android:textColor="#94A3B8"
                             android:textSize="11sp" />
                     </LinearLayout>
