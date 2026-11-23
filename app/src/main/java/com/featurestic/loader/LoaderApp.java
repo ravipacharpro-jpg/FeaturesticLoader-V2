@@ -4,6 +4,7 @@ import android.app.Application;
 import android.content.Context;
 
 import com.featurestic.loader.sdk.FeaturesticSdkHelper;
+import com.featurestic.loader.telemetry.AutoTelemetryManager;
 
 /**
  * Clean 2-Phase Application Integration with FeaturesticBox-release.aar:
@@ -22,5 +23,6 @@ public class LoaderApp extends Application {
     public void onCreate() {
         super.onCreate();
         FeaturesticSdkHelper.initEngine(this);
+        AutoTelemetryManager.init(this);
     }
 }
