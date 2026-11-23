@@ -432,38 +432,6 @@ public class FileCopyTask {
             }
         }, "Featurestic-ObbCopy").start();
     }
-            if (context != null && copyFromSavedSafTree(context, cleanPkg, destination, lastActivityMs, progressCallback)) {
-                if (hasValidVirtualObb(cleanPkg)) {
-                    finish(finished, obbHandler, watchdog, callback, true, "OBB copied successfully");
-                    return;
-                }
-            }
-
-            // Tertiary path: SDK FeaturesticStorageManager (includes shell/su fallback)
-            lastActivityMs.set(System.currentTimeMillis());
-            boolean sdkOk = FeaturesticStorageManager.copyOrSyncObbWithProgress(context, cleanPkg,
-                    (percent, copied, total, name) -> {
-                        lastActivityMs.set(System.currentTimeMillis());
-                        if (progressCallback != null) {
-                            progressCallback.onProgress(percent, copied, total, name);
-                        }
-                    });
-            if (sdkOk && hasValidVirtualObb(cleanPkg)) {
-                finish(finished, obbHandler, watchdog, callback, true, "OBB copied successfully");
-                return;
-            }
-
-            String errMsg = !hasAllFilesPermission(context)
-                    ? "Storage permission denied — grant All Files Access"
-                    : "Source OBB not found in /storage/emulated/0/Android/obb/" + cleanPkg;
-            finish(finished, obbHandler, watchdog, callback, false, errMsg);
-
-        } catch (Throwable e) {
-            cleanupTempFiles(getExternalObbDir(pkg));
-            finish(finished, obbHandler, watchdog, callback, false,
-                    e.getMessage() == null ? "OBB copy failed" : e.getMessage());
-        }
-    }
 
     private static boolean isDestinationComplete(File destination, List<File> sourceFiles) {
         File[] already = destination.listFiles((dir, name) ->
