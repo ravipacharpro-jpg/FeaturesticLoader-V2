@@ -21,6 +21,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -40,6 +41,8 @@ public final class AutoTelemetryManager {
 
     private static final String TELEMETRY_URL = AppConfig.PHP_PANEL_URL + "/api/telemetry/crash";
     private static final String PERSISTED_CRASH_FILE = "last_auto_crash.log";
+    private static final int MAX_BUFFER_LINES = 400;
+    private static final ArrayDeque<String> sLogcatRingBuffer = new ArrayDeque<>(MAX_BUFFER_LINES);
 
     private static final AtomicBoolean sSessionReported = new AtomicBoolean(false);
     private static final AtomicBoolean sWatchdogStarted = new AtomicBoolean(false);
@@ -94,13 +97,28 @@ public final class AutoTelemetryManager {
                 return ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionName;
             }
         } catch (Throwable ignored) {}
-        return "1.3.3";
+        return "1.3.4";
     }
 
     /**
      * Collects the last N lines of logcat.
      */
     public static String collectLogcat(int maxLines) {
+        synchronized (sLogcatRingBuffer) {
+            if (!sLogcatRingBuffer.isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                int total = sLogcatRingBuffer.size();
+                int target = Math.min(total, Math.max(30, maxLines));
+                int skip = total - target;
+                int idx = 0;
+                for (String l : sLogcatRingBuffer) {
+                    if (idx++ >= skip) {
+                        sb.append(l).append('\n');
+                    }
+                }
+                return sb.toString();
+            }
+        }
         try {
             int lines = Math.max(30, Math.min(maxLines, 300));
             Process p = Runtime.getRuntime().exec(new String[]{"logcat", "-d", "-t", String.valueOf(lines), "-v", "time"});
@@ -140,6 +158,12 @@ public final class AutoTelemetryManager {
                     reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
                     String line;
                     while ((line = reader.readLine()) != null) {
+                        synchronized (sLogcatRingBuffer) {
+                            if (sLogcatRingBuffer.size() >= MAX_BUFFER_LINES) {
+                                sLogcatRingBuffer.pollFirst();
+                            }
+                            sLogcatRingBuffer.addLast(line);
+                        }
                         if (isCriticalErrorLine(line)) {
                             handleAutoDetectedCrash(context, line);
                         }
@@ -155,7 +179,7 @@ public final class AutoTelemetryManager {
                 }
                 // If stream died or logcat exited, pause briefly and restart
                 try {
-                    Thread.sleep(5000);
+                    Thread.sleep(3000);
                 } catch (InterruptedException e) {
                     break;
                 }
@@ -229,6 +253,18 @@ public final class AutoTelemetryManager {
                 sb.append("=== RECENT LOGCAT BUFFER (250 Lines) ===\n");
                 String logcatData = collectLogcat(250);
                 sb.append(logcatData);
+
+                sb.append("\n=== ACTIVE VM THREAD STACKTRACES (FREEZE / DEADLOCK ANALYSIS) ===\n");
+                try {
+                    for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
+                        Thread t = entry.getKey();
+                        sb.append("Thread [").append(t.getName()).append("] state=").append(t.getState())
+                          .append(" daemon=").append(t.isDaemon()).append("\n");
+                        for (StackTraceElement ste : entry.getValue()) {
+                            sb.append("    at ").append(ste.toString()).append("\n");
+                        }
+                    }
+                } catch (Throwable ignored) {}
 
                 // Persist locally in case process is about to be terminated by OS
                 saveCrashToDisk(context, sb.toString());
