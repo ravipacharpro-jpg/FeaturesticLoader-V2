@@ -16,8 +16,8 @@ public final class AppConfig {
     public static final String BRAND_TAGLINE       = "PLAY BEYOND LIMITS";
     public static final String LOGIN_SUBTITLE      = "Welcome back! Please authenticate to continue.";
     public static final String COPYRIGHT_LABEL     = "Copyright @2026 - Featurestic Leaks";
-    public static final String VERSION_LABEL       = "Loader (v1.0.4)";
-    public static final String INSTALLED_LABEL     = "Installed: 1.0.4";
+    public static final String VERSION_LABEL       = "Loader (v1.2.5)";
+    public static final String INSTALLED_LABEL     = "Installed: 1.2.5";
 
     // Game Info
     public static final String TARGET_GAME_NAME    = "Battlegrounds India";
@@ -33,8 +33,7 @@ public final class AppConfig {
     // ------------------------------------------------------------------------
     // 2. BACKEND & PANEL AUTHENTICATION SETTINGS
     // ------------------------------------------------------------------------
-    // Login link / panel URL removed for direct testing with random keys
-    public static final String PHP_PANEL_URL       = "";
+    public static final String PHP_PANEL_URL       = "https://featurestic-box-panel.vercel.app";
     public static final String SDK_LICENSE_KEY     = "FBVX-X9R2M7K4Q8";
     public static final String PHP_GAME_TAG        = "PUBG";
 

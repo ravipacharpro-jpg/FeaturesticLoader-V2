@@ -28,11 +28,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
 
 import com.featurestic.box.compat.auth.MicroGGoogleAuthEngine;
+import com.featurestic.box.core.CrashHandler;
 import com.featurestic.loader.AppConfig;
 import com.featurestic.loader.R;
 import com.featurestic.loader.auth.PhpAuthManager;
 import com.featurestic.loader.auth.SocialAccountManager;
 import com.featurestic.loader.sdk.FeaturesticSdkHelper;
+import com.featurestic.loader.sdk.FileCopyTask;
+import com.featurestic.loader.update.AppUpdateManager;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -125,6 +128,25 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         refreshSocialAccountCard();
+        startAutoObbSyncIfNeeded();
+        AppUpdateManager.checkForUpdate(this, false);
+    }
+
+    private void startAutoObbSyncIfNeeded() {
+        if (!FeaturesticSdkHelper.hasAllFilesPermission(this)) {
+            return;
+        }
+        if (FeaturesticSdkHelper.hasVirtualObbFiles(TARGET_PKG)) {
+            return;
+        }
+        FileCopyTask task = new FileCopyTask(this);
+        task.installOrFixPkg(TARGET_PKG, null, (success, message) -> {
+            runOnUiThread(() -> {
+                if (success && FeaturesticSdkHelper.hasVirtualObbFiles(TARGET_PKG)) {
+                    Toast.makeText(MainActivity.this, "✅ BGMI OBB auto-synced successfully!", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
     }
 
     @Override
@@ -561,6 +583,26 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
+
+        View btnCheckUpdate = dialog.findViewById(R.id.btnMenuCheckUpdate);
+        if (btnCheckUpdate != null) {
+            btnCheckUpdate.setOnClickListener(v -> {
+                dialog.dismiss();
+                AppUpdateManager.checkForUpdate(MainActivity.this, true);
+            });
+        }
+
+        View btnSendLogs = dialog.findViewById(R.id.btnMenuSendLogs);
+        if (btnSendLogs != null) {
+            btnSendLogs.setOnClickListener(v -> {
+                dialog.dismiss();
+                Toast.makeText(MainActivity.this, "Uploading diagnostic logs to developer...", Toast.LENGTH_SHORT).show();
+                CrashHandler.reportDiagnosticLogs("Manual diagnostic logs from MainActivity options menu", () -> {
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "✅ Diagnostic logs uploaded successfully!", Toast.LENGTH_LONG).show());
+                });
+            });
+        }
+
         View btnSignOut = dialog.findViewById(R.id.btnMenuSignOut);
         if (btnSignOut != null) {
             btnSignOut.setOnClickListener(v -> {
@@ -577,18 +619,20 @@ public class MainActivity extends AppCompatActivity {
 
     private void syncObbFiles() {
         setLaunchLoading(true, "Syncing OBB...");
-        new Thread(() -> {
-            boolean ok = FeaturesticSdkHelper.syncObbNow(MainActivity.this, TARGET_PKG);
+        Toast.makeText(this, "Starting OBB sync...", Toast.LENGTH_SHORT).show();
+        FileCopyTask task = new FileCopyTask(this);
+        task.installOrFixPkg(TARGET_PKG, (percent, copied, total, file) -> {
             runOnUiThread(() -> {
-                setLaunchLoading(false, "LAUNCH GAME");
-                if (ok) {
-                    Toast.makeText(MainActivity.this, "OBB Sync Completed!", Toast.LENGTH_LONG).show();
-                } else {
-                    pendingLaunchAfterSafObb = false;
-                    requestSafObbPermission();
+                if (isLaunching) {
+                    tvLaunchLabel.setText("Syncing (" + percent + "%)");
                 }
             });
-        }).start();
+        }, (success, message) -> {
+            runOnUiThread(() -> {
+                setLaunchLoading(false, "LAUNCH GAME");
+                Toast.makeText(MainActivity.this, success ? "✅ OBB Synced Successfully!" : "Sync failed: " + message, Toast.LENGTH_LONG).show();
+            });
+        });
     }
 
     private void requestSafObbPermission() {
@@ -625,18 +669,24 @@ public class MainActivity extends AppCompatActivity {
 
         if (!FeaturesticSdkHelper.hasVirtualObbFiles(TARGET_PKG)) {
             setLaunchLoading(true, "Copying OBB...");
-            new Thread(() -> {
-                boolean synced = FeaturesticSdkHelper.syncObbNow(MainActivity.this, TARGET_PKG);
+            Toast.makeText(this, "Copying game OBB automatically, please wait...", Toast.LENGTH_SHORT).show();
+            FileCopyTask task = new FileCopyTask(this);
+            task.installOrFixPkg(TARGET_PKG, (percent, copied, total, file) -> {
                 runOnUiThread(() -> {
-                    if (synced && FeaturesticSdkHelper.hasVirtualObbFiles(TARGET_PKG)) {
+                    if (isLaunching) {
+                        tvLaunchLabel.setText("Copying OBB (" + percent + "%)");
+                    }
+                });
+            }, (success, message) -> {
+                runOnUiThread(() -> {
+                    if (success && FeaturesticSdkHelper.hasVirtualObbFiles(TARGET_PKG)) {
                         launchGameNow();
                     } else {
                         setLaunchLoading(false, "LAUNCH GAME");
-                        pendingLaunchAfterSafObb = true;
-                        requestSafObbPermission();
+                        Toast.makeText(MainActivity.this, "OBB copy failed: " + message, Toast.LENGTH_LONG).show();
                     }
                 });
-            }, "Featurestic-PreLaunch-OBB").start();
+            });
             return;
         }
 

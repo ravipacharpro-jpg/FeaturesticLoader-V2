@@ -86,20 +86,26 @@ public class FileCopyTask {
     public static boolean hasValidVirtualObb(String packageName) {
         if (packageName == null || packageName.trim().isEmpty()) return false;
         String pkg = packageName.trim();
-        File destination = getExternalObbDir(pkg);
-        cleanupTempFiles(destination);
-        migrateLegacyLowercaseDir(pkg, destination);
+        File root = getExternalStorageRoot();
+        File[] candidateDirs = new File[]{
+                new File(root, "Sdcard/Android/obb/" + pkg),
+                new File(root, "SdCard/Android/obb/" + pkg)
+        };
 
-        File[] already = destination.listFiles((dir, name) ->
-                name != null && name.toLowerCase(Locale.US).endsWith(".obb"));
-        if (already != null) {
-            for (File f : already) {
-                if (f != null && f.isFile()) {
-                    if (f.length() >= MIN_VALID_OBB_BYTES) {
-                        return true;
-                    } else if (f.length() == 0L) {
-                        //noinspection ResultOfMethodCallIgnored
-                        f.delete();
+        for (File dir : candidateDirs) {
+            if (dir == null || !dir.exists()) continue;
+            cleanupTempFiles(dir);
+            File[] already = dir.listFiles((d, name) ->
+                    name != null && name.toLowerCase(Locale.US).endsWith(".obb"));
+            if (already != null) {
+                for (File f : already) {
+                    if (f != null && f.isFile()) {
+                        if (f.length() >= MIN_VALID_OBB_BYTES) {
+                            return true;
+                        } else if (f.length() == 0L) {
+                            //noinspection ResultOfMethodCallIgnored
+                            f.delete();
+                        }
                     }
                 }
             }
@@ -238,7 +244,7 @@ public class FileCopyTask {
 
     /**
      * Installs package in FeaturesticBoxCore (if not installed) and copies OBB to
-     * /storage/emulated/0/SdCard/Android/obb/<pkg>/.
+     * /storage/emulated/0/Sdcard/Android/obb/<pkg>/ (per /storage/emulated/0/obb.txt).
      */
     public void installOrFixPkg(final String pkg, final ProgressCallback progressCallback, final ObbCallback callback) {
         new Thread(() -> {
@@ -263,13 +269,14 @@ public class FileCopyTask {
                     if (!FeaturesticBoxCore.get().isInstalled(pkg, USER_ID)
                             && (result == null || !result.success)) {
                         String err = (result != null && result.msg != null && !result.msg.isEmpty())
-                                ? result.msg : "APK clone failed";
+                                ? result.msg : "Install failed";
                         postResult(callback, false, "Install failed: " + err);
                         return;
                     }
                 }
 
-                runCopyObbPkgInternal(pkg, progressCallback, callback);
+                copyObbPkg(pkg, progressCallback, callback);
+
             } catch (Throwable e) {
                 postResult(callback, false, e.getMessage() == null ? "Install error" : e.getMessage());
             }
@@ -300,189 +307,131 @@ public class FileCopyTask {
     }
 
     public void copyObbPkg(final String pkg, final ProgressCallback progressCallback, final ObbCallback callback) {
-        new Thread(() -> runCopyObbPkgInternal(pkg, progressCallback, callback), "Featurestic-ObbCopy").start();
-    }
+        File root = Environment.getExternalStorageDirectory();
+        File source = new File(root, "Android/obb/" + pkg);
+        File destination = new File(root, "Sdcard/Android/obb/" + pkg);
+        if (!destination.exists()) {
+            destination.mkdirs();
+        }
+        File destinationCap = new File(root, "SdCard/Android/obb/" + pkg);
+        if (!destinationCap.exists()) {
+            destinationCap.mkdirs();
+        }
 
-    private void runCopyObbPkgInternal(final String pkg, final ProgressCallback progressCallback, final ObbCallback callback) {
-        final AtomicBoolean finished = new AtomicBoolean(false);
-        final AtomicLong lastActivityMs = new AtomicLong(System.currentTimeMillis());
-        final Handler obbHandler = new Handler(Looper.getMainLooper());
+        File[] already = destination.listFiles((dir, name) ->
+                name != null && name.toLowerCase(Locale.US).endsWith(".obb"));
+        if ((already == null || already.length == 0) && destinationCap.exists()) {
+            already = destinationCap.listFiles((dir, name) ->
+                    name != null && name.toLowerCase(Locale.US).endsWith(".obb"));
+        }
 
-        final Runnable watchdog = new Runnable() {
-            @Override
-            public void run() {
-                if (finished.get()) return;
-                long idleMs = System.currentTimeMillis() - lastActivityMs.get();
-                if (idleMs >= INACTIVITY_TIMEOUT_MS) {
-                    if (finished.compareAndSet(false, true)) {
-                        cleanupTempFiles(getExternalObbDir(pkg));
-                        postResult(callback, false, "OBB copy timed out");
-                    }
-                } else {
-                    obbHandler.postDelayed(this, Math.min(5000L, INACTIVITY_TIMEOUT_MS - idleMs));
+        if (already != null && already.length > 0) {
+            boolean hasValid = false;
+            for (File f : already) {
+                if (f != null && f.isFile() && f.length() >= MIN_VALID_OBB_BYTES) {
+                    hasValid = true;
+                    break;
                 }
             }
-        };
-        obbHandler.postDelayed(watchdog, INACTIVITY_TIMEOUT_MS);
-
-        try {
-            if (pkg == null || pkg.trim().isEmpty()) {
-                finish(finished, obbHandler, watchdog, callback, false, "Invalid package name");
-                return;
-            }
-            String cleanPkg = pkg.trim();
-
-            File destination = getExternalObbDir(cleanPkg);
-            if (!destination.exists() && !destination.mkdirs()) {
-                finish(finished, obbHandler, watchdog, callback, false,
-                        "Cannot create destination: " + destination.getAbsolutePath());
-                return;
-            }
-
-            cleanupTempFiles(destination);
-            migrateLegacyLowercaseDir(cleanPkg, destination);
-
-            // Fast check: valid OBB already present in /SdCard/Android/obb/<pkg>
-            List<File> sourceFiles = findSourceObbFiles(context, cleanPkg);
-            if (isDestinationComplete(destination, sourceFiles)) {
+            if (hasValid) {
                 if (progressCallback != null) {
-                    progressCallback.onProgress(100, 1L, 1L, "OBB ready");
+                    progressCallback.onProgress(100, 1L, 1L, "OBB already available");
                 }
-                finish(finished, obbHandler, watchdog, callback, true, "OBB already available");
+                postResult(callback, true, "OBB already available");
                 return;
             }
+        }
 
-            // Primary path: direct Java FileChannel.transferTo() (reference 5_6316547276252652180.txt)
-            if (!sourceFiles.isEmpty()) {
-                long totalBytes = 0L;
-                for (File f : sourceFiles) {
-                    totalBytes += Math.max(0L, f.length());
+        final AtomicBoolean finished = new AtomicBoolean(false);
+        final Handler obbHandler = new Handler(Looper.getMainLooper());
+        obbHandler.postDelayed(() -> {
+            if (finished.compareAndSet(false, true)) {
+                postResult(callback, false, "OBB copy timed out");
+            }
+        }, 60000);
+
+        new Thread(() -> {
+            try {
+                File[] sourceFiles = source.listFiles((dir, name) ->
+                        name != null && name.toLowerCase(Locale.US).endsWith(".obb"));
+
+                if (sourceFiles == null || sourceFiles.length == 0) {
+                    List<File> probed = findSourceObbFiles(context, pkg);
+                    if (!probed.isEmpty()) {
+                        sourceFiles = probed.toArray(new File[0]);
+                    }
                 }
-                if (totalBytes <= 0L) totalBytes = 1L;
 
-                long copiedBytes = 0L;
-                long lastUiUpdateMs = 0L;
+                if (sourceFiles == null || sourceFiles.length == 0) {
+                    if (finished.compareAndSet(false, true)) {
+                        postResult(callback, false, "Source OBB not found");
+                    }
+                    return;
+                }
 
                 for (File src : sourceFiles) {
                     if (finished.get()) return;
 
                     File dest = new File(destination, src.getName());
-                    long srcSize = src.length();
-                    if (dest.isFile() && dest.length() == srcSize && srcSize >= MIN_VALID_OBB_BYTES) {
-                        copiedBytes += srcSize;
-                        lastActivityMs.set(System.currentTimeMillis());
-                        if (progressCallback != null) {
-                            int pct = (int) Math.min(100L, (copiedBytes * 100L) / totalBytes);
-                            progressCallback.onProgress(pct, copiedBytes, totalBytes, src.getName());
-                        }
+                    long size = src.length();
+                    if (dest.isFile() && dest.length() == size && size >= MIN_VALID_OBB_BYTES) {
                         continue;
                     }
 
-                    File destTmp = new File(destination, src.getName() + ".tmp");
-                    if (destTmp.exists()) {
-                        //noinspection ResultOfMethodCallIgnored
-                        destTmp.delete();
-                    }
+                    try (
+                            FileChannel in = new FileInputStream(src).getChannel();
+                            FileChannel out = new FileOutputStream(dest).getChannel()
+                    ) {
+                        long position = 0;
+                        long lastUiMs = 0;
 
-                    long fileStartCopied = copiedBytes;
-                    boolean fileOk = false;
-
-                    // Method 1: FileChannel.transferTo() in 16 MB chunks
-                    try (FileChannel in = new FileInputStream(src).getChannel();
-                         FileChannel out = new FileOutputStream(destTmp).getChannel()) {
-                        long size = in.size();
-                        long position = 0L;
                         while (position < size) {
                             if (finished.get()) {
-                                //noinspection ResultOfMethodCallIgnored
-                                destTmp.delete();
-                                return;
-                            }
-                            long toTransfer = Math.min(CHUNK_SIZE, size - position);
-                            long transferred = in.transferTo(position, toTransfer, out);
-                            if (transferred <= 0L) {
                                 break;
                             }
-                            position += transferred;
-                            copiedBytes = fileStartCopied + position;
-                            lastActivityMs.set(System.currentTimeMillis());
+                            long transferred = in.transferTo(
+                                    position,
+                                    Math.min(CHUNK_SIZE, size - position),
+                                    out
+                            );
 
+                            if (transferred <= 0) {
+                                break;
+                            }
+
+                            position += transferred;
                             long now = System.currentTimeMillis();
-                            if (progressCallback != null && (now - lastUiUpdateMs >= 80L || position >= size)) {
-                                lastUiUpdateMs = now;
-                                int pct = (int) Math.min(100L, (copiedBytes * 100L) / totalBytes);
-                                progressCallback.onProgress(pct, copiedBytes, totalBytes, src.getName());
+                            if (progressCallback != null && (now - lastUiMs >= 80 || position >= size)) {
+                                lastUiMs = now;
+                                int pct = (int) Math.min(100L, (position * 100L) / Math.max(1L, size));
+                                progressCallback.onProgress(pct, position, size, src.getName());
                             }
                         }
-                        if (position >= size && destTmp.length() == size) {
-                            fileOk = true;
+                    }
+
+                    try {
+                        File destCap = new File(destinationCap, src.getName());
+                        if (!destCap.exists() && dest.exists()) {
+                            try {
+                                android.system.Os.link(dest.getAbsolutePath(), destCap.getAbsolutePath());
+                            } catch (Throwable ignored) {
+                            }
                         }
                     } catch (Throwable ignored) {
-                        fileOk = false;
-                    }
-
-                    // Method 2: Buffered stream fallback if transferTo() stalled or threw
-                    if (!fileOk) {
-                        if (destTmp.exists()) {
-                            //noinspection ResultOfMethodCallIgnored
-                            destTmp.delete();
-                        }
-                        copiedBytes = fileStartCopied;
-                        try (FileInputStream in = new FileInputStream(src);
-                             FileOutputStream out = new FileOutputStream(destTmp)) {
-                            byte[] buffer = new byte[524288]; // 512 KB
-                            int read;
-                            while ((read = in.read(buffer)) != -1) {
-                                if (finished.get()) {
-                                    //noinspection ResultOfMethodCallIgnored
-                                    destTmp.delete();
-                                    return;
-                                }
-                                out.write(buffer, 0, read);
-                                copiedBytes += read;
-                                lastActivityMs.set(System.currentTimeMillis());
-
-                                long now = System.currentTimeMillis();
-                                if (progressCallback != null && (now - lastUiUpdateMs >= 80L || copiedBytes >= totalBytes)) {
-                                    lastUiUpdateMs = now;
-                                    int pct = (int) Math.min(100L, (copiedBytes * 100L) / totalBytes);
-                                    progressCallback.onProgress(pct, copiedBytes, totalBytes, src.getName());
-                                }
-                            }
-                            out.flush();
-                            fileOk = destTmp.isFile() && destTmp.length() >= MIN_VALID_OBB_BYTES
-                                    && (srcSize <= 0L || destTmp.length() == srcSize);
-                        }
-                    }
-
-                    if (!fileOk) {
-                        if (destTmp.exists()) {
-                            //noinspection ResultOfMethodCallIgnored
-                            destTmp.delete();
-                        }
-                        finish(finished, obbHandler, watchdog, callback, false,
-                                "Failed to copy OBB file: " + src.getName());
-                        return;
-                    }
-
-                    if (dest.exists()) {
-                        //noinspection ResultOfMethodCallIgnored
-                        dest.delete();
-                    }
-                    if (!destTmp.renameTo(dest)) {
-                        finish(finished, obbHandler, watchdog, callback, false,
-                                "Failed to finalize OBB file: " + dest.getName());
-                        return;
                     }
                 }
 
-                if (hasValidVirtualObb(cleanPkg)) {
-                    finish(finished, obbHandler, watchdog, callback, true, "OBB copied successfully");
-                    return;
+                if (finished.compareAndSet(false, true)) {
+                    postResult(callback, true, "OBB copied successfully");
+                }
+
+            } catch (Throwable e) {
+                if (finished.compareAndSet(false, true)) {
+                    postResult(callback, false, e.getMessage() == null ? "OBB copy failed" : e.getMessage());
                 }
             }
-
-            // Secondary path: SAF DocumentTree URI (for Android 13–16 Scoped Storage if granted)
+        }, "Featurestic-ObbCopy").start();
+    }
             if (context != null && copyFromSavedSafTree(context, cleanPkg, destination, lastActivityMs, progressCallback)) {
                 if (hasValidVirtualObb(cleanPkg)) {
                     finish(finished, obbHandler, watchdog, callback, true, "OBB copied successfully");

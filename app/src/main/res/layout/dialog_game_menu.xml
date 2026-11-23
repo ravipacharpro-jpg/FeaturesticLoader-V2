@@ -124,6 +124,66 @@
             android:textStyle="bold"
             android:layout_marginStart="14dp" />
     </LinearLayout>
+    <!-- Option: Check for Updates -->
+    <LinearLayout
+        android:id="@+id/btnMenuCheckUpdate"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:background="@drawable/bg_timer_box"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:layout_marginBottom="10dp"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:src="@drawable/ic_pulse"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Check for Updates"
+            android:textColor="#0F172A"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginStart="14dp" />
+    </LinearLayout>
+
+    <!-- Option: Send Diagnostic Logs -->
+    <LinearLayout
+        android:id="@+id/btnMenuSendLogs"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:background="@drawable/bg_timer_box"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:layout_marginBottom="10dp"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:src="@drawable/ic_phone_device"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📤 Send Diagnostic Logs"
+            android:textColor="#0F172A"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginStart="14dp" />
+    </LinearLayout>
+
     <!-- Option 3: Sign Out -->
     <LinearLayout
         android:id="@+id/btnMenuSignOut"
