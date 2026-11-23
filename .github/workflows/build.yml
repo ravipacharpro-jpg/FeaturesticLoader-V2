@@ -45,6 +45,13 @@ jobs:
         run: |
           python3 scripts/clean_background.py app/src/main/res/drawable/bg_soldier.jpg app/src/main/res/drawable/bg_soldier.jpg
 
+      - name: Setup Fixed Keystore
+        run: |
+          mkdir -p keystore
+          if [ ! -f keystore/debug.keystore ]; then
+            keytool -genkeypair -alias androiddebugkey -keypass android -keystore keystore/debug.keystore -storepass android -dname "CN=Featurestic, OU=Mobile, O=Featurestic, L=City, S=State, C=US" -validity 10000 -keyalg RSA -keysize 2048
+          fi
+
       - name: Build Debug & Signed Release APK
         run: |
           chmod +x ./gradlew
@@ -55,5 +62,5 @@ jobs:
         with:
           name: FeaturesticLoader-V2-APK
           path: |
-            **/app/build/outputs/apk/debug/*.apk
-            **/app/build/outputs/apk/release/*.apk
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/release/app-release.apk
