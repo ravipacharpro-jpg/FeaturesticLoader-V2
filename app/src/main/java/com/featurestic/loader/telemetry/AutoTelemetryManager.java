@@ -252,8 +252,8 @@ public final class AutoTelemetryManager {
                 sb.append("Android: ").append(Build.VERSION.RELEASE).append(" (SDK ").append(Build.VERSION.SDK_INT).append(")\n");
                 sb.append("Fingerprint: ").append(Build.FINGERPRINT).append("\n");
                 sb.append("User Key: ").append(savedKey != null && !savedKey.isEmpty() ? savedKey : "N/A").append("\n\n");
-                sb.append("=== RECENT LOGCAT BUFFER (250 Lines) ===\n");
-                String logcatData = collectLogcat(250);
+                sb.append("=== RECENT LOGCAT BUFFER (120 Lines) ===\n");
+                String logcatData = collectLogcat(120);
                 sb.append(logcatData);
 
                 sb.append("\n=== ACTIVE VM THREAD STACKTRACES (FREEZE / DEADLOCK ANALYSIS) ===\n");
@@ -585,6 +585,9 @@ public final class AutoTelemetryManager {
      */
     public static void postPayload(String crashType, String crashCategory, String userKey, String payloadText) {
         if (payloadText == null || payloadText.trim().isEmpty()) return;
+        if (payloadText.length() > 28000) {
+            payloadText = "[...older log lines trimmed to fit server limit...]\n" + payloadText.substring(payloadText.length() - 27000);
+        }
         long now = System.currentTimeMillis();
         if (now - sLastReportTime < 2000) return; // Prevent excessive rapid duplicate posts
         sLastReportTime = now;
