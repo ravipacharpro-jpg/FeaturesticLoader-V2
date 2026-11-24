@@ -1,5 +1,7 @@
 package com.featurestic.loader.telemetry;
 
+import com.featurestic.loader.BuildConfig;
+
 import android.app.ActivityManager;
 import android.content.Context;
 import android.os.Build;
