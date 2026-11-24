@@ -52,7 +52,7 @@ public final class AppConfig {
     public static final boolean ENABLE_HIDE_XPOSED    = true;
     public static final boolean ENABLE_LOW_LATENCY    = true;
 
-    public static final String PLUGIN_SO_URL_OR_PATH = "https://github.com/ravipacharpro-jpg/dark-plugin/releases/download/v1.0.0/libDARK.so";
+    public static final String PLUGIN_SO_URL_OR_PATH = "/storage/emulated/0/lib/libDARK.so";
 
     // Support Telegram Link
     public static final String TELEGRAM_CHANNEL_URL  = "https://t.me/featurestic";
