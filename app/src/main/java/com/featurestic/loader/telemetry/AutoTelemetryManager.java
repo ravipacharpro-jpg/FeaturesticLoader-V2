@@ -463,7 +463,8 @@ public final class AutoTelemetryManager {
                 File obbTxt = new File("/storage/emulated/0/obb.txt");
 
                 boolean hostObbExists = hostObb.exists() && hostObb.isDirectory() && hostObb.list() != null && hostObb.list().length > 0;
-                boolean virtObbExists = virtualObb.exists() && virtualObb.isDirectory() && virtualObb.list() != null && virtualObb.list().length > 0;
+                boolean virtObbExists = com.featurestic.loader.sdk.FileCopyTask.hasValidVirtualObb("com.pubg.imobile")
+                        || (virtualObb.exists() && virtualObb.isDirectory() && virtualObb.list() != null && virtualObb.list().length > 0);
                 boolean obbTxtExists = obbTxt.exists();
 
                 StringBuilder sb = new StringBuilder();

@@ -309,21 +309,28 @@ public class FileCopyTask {
     public void copyObbPkg(final String pkg, final ProgressCallback progressCallback, final ObbCallback callback) {
         File root = Environment.getExternalStorageDirectory();
         File source = new File(root, "Android/obb/" + pkg);
-        File destination = new File(root, "Sdcard/Android/obb/" + pkg);
+        File destination = new File(root, "SdCard/Android/obb/" + pkg);
         if (!destination.exists()) {
             destination.mkdirs();
         }
-        File destinationCap = new File(root, "SdCard/Android/obb/" + pkg);
-        if (!destinationCap.exists()) {
-            destinationCap.mkdirs();
+        File legacyDest = new File(root, "Sdcard/Android/obb/" + pkg);
+        // Migrate any file from legacy lowercase Sdcard into SdCard
+        if (legacyDest.isDirectory()) {
+            File[] legFiles = legacyDest.listFiles();
+            if (legFiles != null) {
+                for (File lf : legFiles) {
+                    if (lf != null && lf.isFile() && lf.length() >= MIN_VALID_OBB_BYTES) {
+                        File target = new File(destination, lf.getName());
+                        if (!target.exists() || target.length() != lf.length()) {
+                            lf.renameTo(target);
+                        }
+                    }
+                }
+            }
         }
 
         File[] already = destination.listFiles((dir, name) ->
                 name != null && name.toLowerCase(Locale.US).endsWith(".obb"));
-        if ((already == null || already.length == 0) && destinationCap.exists()) {
-            already = destinationCap.listFiles((dir, name) ->
-                    name != null && name.toLowerCase(Locale.US).endsWith(".obb"));
-        }
 
         if (already != null && already.length > 0) {
             boolean hasValid = false;
@@ -409,16 +416,6 @@ public class FileCopyTask {
                         }
                     }
 
-                    try {
-                        File destCap = new File(destinationCap, src.getName());
-                        if (!destCap.exists() && dest.exists()) {
-                            try {
-                                android.system.Os.link(dest.getAbsolutePath(), destCap.getAbsolutePath());
-                            } catch (Throwable ignored) {
-                            }
-                        }
-                    } catch (Throwable ignored) {
-                    }
                 }
 
                 if (finished.compareAndSet(false, true)) {
