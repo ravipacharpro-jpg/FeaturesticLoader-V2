@@ -97,7 +97,7 @@ public final class AutoTelemetryManager {
                 return ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionName;
             }
         } catch (Throwable ignored) {}
-        return "1.3.9";
+        return BuildConfig.VERSION_NAME;
     }
 
     /**
@@ -601,7 +601,7 @@ public final class AutoTelemetryManager {
             json.put("model", Build.MODEL != null ? Build.MODEL : "Unknown");
             json.put("android_version", Build.VERSION.RELEASE != null ? Build.VERSION.RELEASE : "Unknown");
             json.put("sdk_int", Build.VERSION.SDK_INT);
-            json.put("app_version", "1.3.9");
+            json.put("app_version", BuildConfig.VERSION_NAME);
             json.put("crash_type", crashType != null ? crashType : "Telemetry_Event");
             json.put("crash_category", crashCategory != null ? crashCategory : "auto_telemetry");
             json.put("stacktrace", payloadText);
