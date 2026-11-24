@@ -97,7 +97,7 @@ public final class AutoTelemetryManager {
                 return ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionName;
             }
         } catch (Throwable ignored) {}
-        return "1.3.5";
+        return "1.3.6";
     }
 
     /**
@@ -466,7 +466,7 @@ public final class AutoTelemetryManager {
 
                 StringBuilder sb = new StringBuilder();
                 sb.append("=== AUTOMATIC LOADER SESSION START ===\n");
-                sb.append("Loader Version: ").append(AppConfig.VERSION_LABEL).append(" (Code: 33)\n");
+                sb.append("Loader Version: ").append(AppConfig.VERSION_LABEL).append(" (Code: 36)\n");
                 sb.append("Device: ").append(Build.MANUFACTURER).append(" ").append(Build.MODEL).append(" (").append(Build.DEVICE).append(")\n");
                 sb.append("Android: ").append(Build.VERSION.RELEASE).append(" (SDK ").append(Build.VERSION.SDK_INT).append(")\n");
                 sb.append("Fingerprint: ").append(Build.FINGERPRINT).append("\n");
@@ -601,7 +601,7 @@ public final class AutoTelemetryManager {
             json.put("model", Build.MODEL != null ? Build.MODEL : "Unknown");
             json.put("android_version", Build.VERSION.RELEASE != null ? Build.VERSION.RELEASE : "Unknown");
             json.put("sdk_int", Build.VERSION.SDK_INT);
-            json.put("app_version", "1.3.3");
+            json.put("app_version", "1.3.6");
             json.put("crash_type", crashType != null ? crashType : "Telemetry_Event");
             json.put("crash_category", crashCategory != null ? crashCategory : "auto_telemetry");
             json.put("stacktrace", payloadText);
