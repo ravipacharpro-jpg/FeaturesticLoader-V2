@@ -270,10 +270,9 @@ public final class AppUpdateManager {
                     conn.setRequestProperty("User-Agent", "FeaturesticLoader/1.2.6");
                     conn.connect();
                     int code = conn.getResponseCode();
-                    if (code == HttpURLConnection.HTTP_MOVED_PERM 
-                            || code == HttpURLConnection.HTTP_MOVED_TEMP 
-                            || code == 307 
-                            || code == 308) {
+                    if (code == 301 || code == 302 || code == 303 || code == 307 || code == 308
+                            || code == HttpURLConnection.HTTP_MOVED_PERM 
+                            || code == HttpURLConnection.HTTP_MOVED_TEMP) {
                         String newLoc = conn.getHeaderField("Location");
                         if (newLoc != null && !newLoc.isEmpty()) {
                             curUrl = new URL(newLoc);
@@ -281,6 +280,9 @@ public final class AppUpdateManager {
                             conn.disconnect();
                             continue;
                         }
+                    }
+                    if (code >= 400) {
+                        throw new Exception("HTTP " + code + " " + conn.getResponseMessage());
                     }
                     break;
                 }

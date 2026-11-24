@@ -97,7 +97,7 @@ public final class AutoTelemetryManager {
                 return ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionName;
             }
         } catch (Throwable ignored) {}
-        return "1.3.4";
+        return "1.3.5";
     }
 
     /**
