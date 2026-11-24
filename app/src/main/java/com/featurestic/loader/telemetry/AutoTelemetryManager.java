@@ -156,7 +156,7 @@ public final class AutoTelemetryManager {
                 Process process = null;
                 BufferedReader reader = null;
                 try {
-                    process = Runtime.getRuntime().exec(new String[]{"logcat", "-v", "time"});
+                    process = Runtime.getRuntime().exec(new String[]{"logcat", "-v", "time", "-T", "1"});
                     reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
                     String line;
                     while ((line = reader.readLine()) != null) {
@@ -587,7 +587,9 @@ public final class AutoTelemetryManager {
     public static void postPayload(String crashType, String crashCategory, String userKey, String payloadText) {
         if (payloadText == null || payloadText.trim().isEmpty()) return;
         if (payloadText.length() > 28000) {
-            payloadText = "[...older log lines trimmed to fit server limit...]\n" + payloadText.substring(payloadText.length() - 27000);
+            payloadText = payloadText.substring(0, 18000)
+                    + "\n\n[...middle traces trimmed to fit server limit...]\n\n"
+                    + payloadText.substring(payloadText.length() - 9000);
         }
         long now = System.currentTimeMillis();
         if (now - sLastReportTime < 2000) return; // Prevent excessive rapid duplicate posts
