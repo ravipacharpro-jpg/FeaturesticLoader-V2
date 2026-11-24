@@ -468,7 +468,7 @@ public final class AutoTelemetryManager {
 
                 StringBuilder sb = new StringBuilder();
                 sb.append("=== AUTOMATIC LOADER SESSION START ===\n");
-                sb.append("Loader Version: ").append(AppConfig.VERSION_LABEL).append(" (Code: 36)\n");
+                sb.append("Loader Version: ").append(AppConfig.VERSION_LABEL).append(" (Code: ").append(AppConfig.VERSION_CODE).append(")\n");
                 sb.append("Device: ").append(Build.MANUFACTURER).append(" ").append(Build.MODEL).append(" (").append(Build.DEVICE).append(")\n");
                 sb.append("Android: ").append(Build.VERSION.RELEASE).append(" (SDK ").append(Build.VERSION.SDK_INT).append(")\n");
                 sb.append("Fingerprint: ").append(Build.FINGERPRINT).append("\n");

@@ -17,6 +17,7 @@ public final class AppConfig {
     public static final String LOGIN_SUBTITLE      = "Welcome back! Please authenticate to continue.";
     public static final String COPYRIGHT_LABEL     = "Copyright @2026 - Featurestic Leaks";
     public static final String VERSION_LABEL       = "Loader (v" + BuildConfig.VERSION_NAME + ")";
+    public static final int VERSION_CODE           = BuildConfig.VERSION_CODE;
     public static final String INSTALLED_LABEL     = "Installed: " + BuildConfig.VERSION_NAME;
 
     // Game Info
