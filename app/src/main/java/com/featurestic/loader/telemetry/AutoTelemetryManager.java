@@ -279,38 +279,23 @@ public final class AutoTelemetryManager {
     }
 
     /**
-     * Saves crash data locally to disk as a recovery backup.
+     * Disabled: crash/telemetry logs are sent directly over HTTPS in RAM without saving to device storage.
      */
     private static void saveCrashToDisk(Context context, String content) {
-        try {
-            File f = new File(context.getFilesDir(), PERSISTED_CRASH_FILE);
-            try (FileOutputStream fos = new FileOutputStream(f)) {
-                fos.write(content.getBytes(StandardCharsets.UTF_8));
-            }
-        } catch (Throwable ignored) {}
+        // Intentionally no-op: do not persist logs on user device
     }
 
     /**
-     * Checks if a previously saved crash file exists from an offline session and uploads it.
+     * Removes any legacy offline crash log file from previous versions so no logs remain on device.
      */
     private static void checkAndSendPersistedOfflineCrash(final Context context) {
-        new Thread(() -> {
-            try {
-                File f = new File(context.getFilesDir(), PERSISTED_CRASH_FILE);
-                if (f.exists() && f.length() > 0) {
-                    byte[] data = new byte[(int) Math.min(f.length(), 65536)];
-                    try (FileInputStream fis = new FileInputStream(f)) {
-                        int read = fis.read(data);
-                        if (read > 0) {
-                            String content = new String(data, 0, read, StandardCharsets.UTF_8);
-                            String savedKey = PhpAuthManager.getSavedKey(context);
-                            postPayload("PERSISTED_OFFLINE_CRASH", "auto_sentinel", savedKey, content);
-                        }
-                    }
-                    f.delete();
-                }
-            } catch (Throwable ignored) {}
-        }, "AutoTelemetry-OfflineRecover").start();
+        try {
+            File f = new File(context.getFilesDir(), PERSISTED_CRASH_FILE);
+            if (f.exists()) {
+                //noinspection ResultOfMethodCallIgnored
+                f.delete();
+            }
+        } catch (Throwable ignored) {}
     }
 
     /**

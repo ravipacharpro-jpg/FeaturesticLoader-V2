@@ -337,76 +337,36 @@ public final class FeaturesticBox {
 
         try {
             if (src.startsWith("http://") || src.startsWith("https://")) {
-                String cachedUrl = cachePrefs.getString("staged_url", "");
-                if (cachedUrl.equals(src) && targetSo.isFile() && isValidElfFile(targetSo)) {
-                    applySoPermissions(targetSo);
-                    mirrorPluginSo(targetSo, packageName);
-                    android.util.Log.i("FeaturesticSO", "Using cached valid .so (" + targetSo.length() + " bytes) for " + src);
-                    return true;
-                }
-
-                // Follow up to 6 redirects (GitHub Releases uses 302 -> objects.githubusercontent.com)
-                String currentUrl = src;
-                java.net.HttpURLConnection conn = null;
-                for (int hop = 0; hop < 6; hop++) {
-                    java.net.URL url = new java.net.URL(currentUrl);
-                    conn = (java.net.HttpURLConnection) url.openConnection();
-                    conn.setInstanceFollowRedirects(false);
-                    conn.setConnectTimeout(20000);
-                    conn.setReadTimeout(45000);
-                    conn.setRequestProperty("User-Agent", "FeaturesticLoader/2.0 (Android)");
-                    int code = conn.getResponseCode();
-                    if (code == 301 || code == 302 || code == 303 || code == 307 || code == 308) {
-                        String loc = conn.getHeaderField("Location");
-                        conn.disconnect();
-                        if (loc == null || loc.trim().isEmpty()) return false;
-                        currentUrl = new java.net.URL(url, loc.trim()).toString();
-                        continue;
+                // Pure RAM-only mode: purge any previously cached physical .so files from disk
+                String[] purgeNames = new String[]{"FeaturesticPlugin.so", "FeaturesticPlugin.so.tmp", "libbgmi.so", "libDARK.so", "libFeaturesticPlugin.so"};
+                for (String n : purgeNames) {
+                    File oldF = new File(nativeDir, n);
+                    if (oldF.exists()) {
+                        //noinspection ResultOfMethodCallIgnored
+                        oldF.delete();
                     }
-                    if (code < 200 || code >= 300) {
-                        android.util.Log.e("FeaturesticSO", "HTTP " + code + " downloading .so from " + currentUrl);
-                        conn.disconnect();
-                        return false;
+                }
+                if (packageName != null && !packageName.trim().isEmpty()) {
+                    File appLibDir = BEnvironment.getAppLibDir(packageName.trim());
+                    if (appLibDir != null && appLibDir.isDirectory()) {
+                        for (String n : purgeNames) {
+                            File oldF = new File(appLibDir, n);
+                            if (oldF.exists()) {
+                                //noinspection ResultOfMethodCallIgnored
+                                oldF.delete();
+                            }
+                        }
                     }
-                    break;
                 }
-                if (conn == null) return false;
+                cachePrefs.edit().clear().apply();
 
-                try (java.io.InputStream in = conn.getInputStream();
-                     java.io.FileOutputStream out = new java.io.FileOutputStream(tmpSo)) {
-                    byte[] buf = new byte[16384];
-                    int read;
-                    while ((read = in.read(buf)) != -1) {
-                        out.write(buf, 0, read);
-                    }
-                    out.flush();
-                } finally {
-                    conn.disconnect();
-                }
-
-                if (!isValidElfFile(tmpSo)) {
-                    android.util.Log.e("FeaturesticSO", "Downloaded .so failed ELF header check! len=" + tmpSo.length());
-                    //noinspection ResultOfMethodCallIgnored
-                    tmpSo.delete();
-                    return false;
-                }
-                if (targetSo.exists()) {
-                    //noinspection ResultOfMethodCallIgnored
-                    targetSo.setWritable(true, false);
-                    //noinspection ResultOfMethodCallIgnored
-                    targetSo.delete();
-                }
-                if (!tmpSo.renameTo(targetSo)) {
-                    copyFileBytes(tmpSo, targetSo);
-                    //noinspection ResultOfMethodCallIgnored
-                    tmpSo.delete();
-                }
-                applySoPermissions(targetSo);
-                mirrorPluginSo(targetSo, packageName);
-                cachePrefs.edit().putString("staged_url", src).apply();
-                android.util.Log.i("FeaturesticSO", "Downloaded & staged .so (" + targetSo.length() + " bytes) -> " + targetSo.getAbsolutePath());
+                android.content.SharedPreferences secPrefs = context.getSharedPreferences("featurestic_so_security", Context.MODE_PRIVATE);
+                String expectedSha = secPrefs.getString("server_so_sha256", "").trim();
+                FeaturesticBoxCore.get().setInMemoryPluginUrl(src, expectedSha);
+                android.util.Log.i("FeaturesticSO", "Configured pure RAM-only (memfd) plugin URL (0 bytes saved on disk)");
                 return true;
             } else {
+                FeaturesticBoxCore.get().setInMemoryPluginUrl("", "");
                 File localSrc = new File(src);
                 if (!localSrc.isFile() || !isValidElfFile(localSrc)) {
                     android.util.Log.e("FeaturesticSO", "Local .so invalid or missing: " + src);
