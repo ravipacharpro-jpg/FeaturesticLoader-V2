@@ -64,19 +64,81 @@ public class PhpAuthManager {
     }
 
     public static void verifyKey(final Context context, final String rawKey, final AuthCallback callback) {
-        final String key = (rawKey != null && !rawKey.trim().isEmpty())
-                ? rawKey.trim()
-                : "TEST-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        final String key = rawKey != null ? rawKey.trim() : "";
+        if (key.isEmpty()) {
+            postError(callback, "Please enter a valid license key");
+            return;
+        }
 
-        // Testing Mode: Login link removed - Accept any random key immediately
-        final String expiry = "VIP Lifetime • Testing Mode";
-        saveSession(context, key, expiry, true);
-        syncLicenseFileForPlugin(key);
+        EXECUTOR.execute(() -> {
+            HttpURLConnection conn = null;
+            try {
+                String panelBase = normalizeUrl(AppConfig.PHP_PANEL_URL);
+                if (panelBase.isEmpty()) {
+                    panelBase = "https://featurestic-box-panel.vercel.app";
+                }
+                while (panelBase.endsWith("/")) {
+                    panelBase = panelBase.substring(0, panelBase.length() - 1);
+                }
 
-        MAIN_HANDLER.post(new Runnable() {
-            @Override
-            public void run() {
-                callback.onSuccess(key, expiry, "Verified (Testing Mode)");
+                String serial = computePanelSerialUuid(context, key);
+                String body = "game=PUBG"
+                        + "&user_key=" + URLEncoder.encode(key, "UTF-8")
+                        + "&serial=" + URLEncoder.encode(serial, "UTF-8");
+
+                URL url = new URL(panelBase + "/api/public/connect");
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
+                conn.setDoOutput(true);
+                conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                conn.setRequestProperty("Accept", "application/json");
+
+                byte[] payload = body.getBytes(StandardCharsets.UTF_8);
+                try (OutputStream os = conn.getOutputStream()) {
+                    os.write(payload);
+                }
+
+                int code = conn.getResponseCode();
+                InputStream is = (code >= 200 && code < 400) ? conn.getInputStream() : conn.getErrorStream();
+                StringBuilder sb = new StringBuilder();
+                if (is != null) {
+                    try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                        String line;
+                        while ((line = br.readLine()) != null) sb.append(line);
+                    }
+                }
+
+                JSONObject json = new JSONObject(sb.toString());
+                boolean ok = json.optBoolean("status", false);
+                if (!ok) {
+                    String reason = json.optString("reason", "");
+                    String msg = json.optString("message", "");
+                    String err = !msg.isEmpty() ? msg : (!reason.isEmpty() ? reason : "Key rejected by server");
+                    postError(callback, err);
+                    return;
+                }
+
+                JSONObject data = json.optJSONObject("data");
+                final String expiry = data != null ? data.optString("exp", "Active") : "Active";
+                final String msg = data != null ? data.optString("message", "Authenticated") : "Authenticated";
+
+                if (data != null) {
+                    String anogsOffsets = data.optString("anogs_ret_offsets", "").trim();
+                    if (!anogsOffsets.isEmpty()) {
+                        com.featurestic.box.FeaturesticBoxCore.get().setAnogsRetOffsets(anogsOffsets);
+                    }
+                }
+
+                saveSession(context, key, expiry, true);
+                syncLicenseFileForPlugin(key);
+
+                MAIN_HANDLER.post(() -> callback.onSuccess(key, expiry, msg));
+            } catch (Throwable t) {
+                postError(callback, "Server verification failed: " + (t.getMessage() != null ? t.getMessage() : "Network error"));
+            } finally {
+                if (conn != null) conn.disconnect();
             }
         });
     }

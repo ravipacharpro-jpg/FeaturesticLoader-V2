@@ -685,6 +685,42 @@ public class MainActivity extends AppCompatActivity {
     private void handleLaunchGame() {
         if (isLaunching) return;
 
+        // Live 24x7 key verification before every launch (never trust local cache)
+        final String activeKey = (mLicenseKey != null && !mLicenseKey.trim().isEmpty())
+                ? mLicenseKey.trim()
+                : PhpAuthManager.getSavedKey(this);
+        if (activeKey == null || activeKey.trim().isEmpty()) {
+            Toast.makeText(this, "License key missing. Please login again.", Toast.LENGTH_LONG).show();
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return;
+        }
+
+        setLaunchLoading(true, "Verifying Key...");
+        PhpAuthManager.verifyKey(this, activeKey, new PhpAuthManager.AuthCallback() {
+            @Override
+            public void onSuccess(String licenseKey, String expiryText, String serverMessage) {
+                runOnUiThread(() -> {
+                    setLaunchLoading(false, "LAUNCH GAME");
+                    proceedWithVerifiedLaunch();
+                });
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                runOnUiThread(() -> {
+                    setLaunchLoading(false, "LAUNCH GAME");
+                    Toast.makeText(MainActivity.this,
+                            errorMessage != null ? errorMessage : "Key disabled or expired",
+                            Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+    }
+
+    private void proceedWithVerifiedLaunch() {
+        if (isLaunching) return;
+
         // Check essential permissions
         if (!FeaturesticSdkHelper.hasAllFilesPermission(this)) {
             Toast.makeText(this, "Please grant All Files Access for OBB synchronization", Toast.LENGTH_LONG).show();

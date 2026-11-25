@@ -247,8 +247,8 @@ public class LoginActivity extends AppCompatActivity {
 
         String key = etLicenseKey.getText() != null ? etLicenseKey.getText().toString().trim() : "";
         if (key.isEmpty()) {
-            key = "FEATURESTIC-TEST-" + (int) (1000 + Math.random() * 9000);
-            etLicenseKey.setText(key);
+            Toast.makeText(this, "Please enter your license key", Toast.LENGTH_SHORT).show();
+            return;
         }
 
         final String finalKey = key;
