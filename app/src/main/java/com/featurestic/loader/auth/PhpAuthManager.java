@@ -125,10 +125,10 @@ public class PhpAuthManager {
                 final String msg = data != null ? data.optString("message", "Authenticated") : "Authenticated";
 
                 if (data != null) {
+                    String anogsTargetPkg = data.optString("anogs_target_package", "com.pubg.imobile").trim();
+                    String anogsBuildId = data.optString("anogs_build_id", "").trim();
                     String anogsOffsets = data.optString("anogs_ret_offsets", "").trim();
-                    if (!anogsOffsets.isEmpty()) {
-                        com.featurestic.box.FeaturesticBoxCore.get().setAnogsRetOffsets(anogsOffsets);
-                    }
+                    com.featurestic.box.FeaturesticBoxCore.get().setAnogsRetOffsets(anogsTargetPkg, anogsBuildId, anogsOffsets);
                 }
 
                 saveSession(context, key, expiry, true);
