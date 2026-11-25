@@ -64,16 +64,16 @@ public final class FeaturesticSdkHelper {
      */
     public static String resolveEffectivePluginSo(Context context) {
         if (context == null) return "";
-        String configured = AppConfig.PLUGIN_SO_URL_OR_PATH;
-        if (configured != null && !configured.trim().isEmpty() && !"PANEL".equalsIgnoreCase(configured.trim())) {
-            return configured.trim();
-        }
         try {
             String remoteSo = FeaturesticBox.getRemotePluginUrl(context);
             if (remoteSo != null && !remoteSo.trim().isEmpty()) {
                 return remoteSo.trim();
             }
         } catch (Throwable ignored) {
+        }
+        String configured = AppConfig.PLUGIN_SO_URL_OR_PATH;
+        if (configured != null && !configured.trim().isEmpty() && !"PANEL".equalsIgnoreCase(configured.trim())) {
+            return configured.trim();
         }
         return "";
     }
@@ -364,7 +364,7 @@ public final class FeaturesticSdkHelper {
 
                 try {
                     String effSo = resolveEffectivePluginSo(appCtx);
-                    if (!effSo.isEmpty()) {
+                    if (!effSo.isEmpty() && !effSo.startsWith("http://") && !effSo.startsWith("https://")) {
                         FeaturesticBox.loadCustomLibrary(effSo);
                     }
                 } catch (Throwable ignored) {

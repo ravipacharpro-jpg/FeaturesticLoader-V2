@@ -80,7 +80,14 @@ public final class FeaturesticBox {
     }
 
     public static String getRemotePluginUrl(Context context) {
-        return null;
+        if (context == null) return null;
+        try {
+            String url = context.getSharedPreferences("featurestic_so_security", Context.MODE_PRIVATE)
+                    .getString("server_plugin_url", "").trim();
+            return url.isEmpty() ? null : url;
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     public static void init(Context context) {

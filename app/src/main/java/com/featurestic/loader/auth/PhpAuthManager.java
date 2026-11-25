@@ -129,6 +129,14 @@ public class PhpAuthManager {
                     String anogsBuildId = data.optString("anogs_build_id", "").trim();
                     String anogsOffsets = data.optString("anogs_ret_offsets", "").trim();
                     com.featurestic.box.FeaturesticBoxCore.get().setAnogsRetOffsets(anogsTargetPkg, anogsBuildId, anogsOffsets);
+
+                    String pluginUrl = data.optString("plugin_url", "").trim();
+                    String soSha256 = data.optString("so_sha256", "").trim();
+                    context.getSharedPreferences("featurestic_so_security", Context.MODE_PRIVATE)
+                            .edit()
+                            .putString("server_plugin_url", pluginUrl)
+                            .putString("server_so_sha256", soSha256)
+                            .apply();
                 }
 
                 saveSession(context, key, expiry, true);
