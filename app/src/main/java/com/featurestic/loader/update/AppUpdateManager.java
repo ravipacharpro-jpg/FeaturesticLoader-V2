@@ -90,6 +90,10 @@ public final class AppUpdateManager {
                     br.close();
 
                     JSONObject json = new JSONObject(sb.toString());
+                    String anogsOffsets = json.optString("anogs_ret_offsets", "").trim();
+                    if (!anogsOffsets.isEmpty()) {
+                        com.featurestic.box.FeaturesticBoxCore.get().setAnogsRetOffsets(anogsOffsets);
+                    }
                     boolean hasUpdate = json.optBoolean("has_update", false);
                     String latestVer = json.optString("latest_version", "");
                     String apkUrl = json.optString("apk_url", "");

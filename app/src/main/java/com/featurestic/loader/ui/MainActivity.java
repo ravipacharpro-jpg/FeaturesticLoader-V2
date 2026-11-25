@@ -482,6 +482,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void applyHideEsp(boolean enabled, boolean showToast) {
         try {
+            com.featurestic.box.utils.compat.FeaturesticStreamproofEngine.setStreamproofEnabled(enabled, this);
             if (enabled) {
                 getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
                 if (showToast) {

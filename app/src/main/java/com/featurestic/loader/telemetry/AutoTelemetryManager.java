@@ -331,6 +331,7 @@ public final class AutoTelemetryManager {
                     sGameWatcherActive.set(false);
                     return;
                 }
+                syncDiscoveredAnogsOffsets(context, pkg);
 
                 // Check at T+25 seconds: Did game pass UE4 initialization?
                 Thread.sleep(15000);
@@ -359,6 +360,43 @@ public final class AutoTelemetryManager {
         }, "AutoTelemetry-GameWatcher");
         watcher.setDaemon(true);
         watcher.start();
+    }
+
+    private static void syncDiscoveredAnogsOffsets(Context context, String pkg) {
+        try {
+            String raw = com.featurestic.box.FeaturesticBoxCore.get().getDiscoveredAnogsOffsets();
+            if (raw == null || !raw.contains("|")) return;
+            String[] parts = raw.split("\\|", 2);
+            String buildId = parts[0].trim();
+            String offsets = parts[1].trim();
+            if (offsets.isEmpty()) return;
+
+            android.content.SharedPreferences prefs = context.getSharedPreferences("featurestic_anogs_sync", Context.MODE_PRIVATE);
+            String last = prefs.getString("last_synced", "");
+            if (raw.equals(last)) return;
+
+            String urlStr = com.featurestic.loader.AppConfig.PHP_PANEL_URL + "/api/telemetry/anogs-offsets";
+            org.json.JSONObject body = new org.json.JSONObject();
+            body.put("offsets", offsets);
+            body.put("build_id", buildId);
+            body.put("pkg", pkg != null ? pkg : "com.pubg.imobile");
+
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(urlStr).openConnection();
+            conn.setRequestMethod("POST");
+            conn.setConnectTimeout(8000);
+            conn.setReadTimeout(8000);
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/json");
+            byte[] data = body.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            try (java.io.OutputStream os = conn.getOutputStream()) {
+                os.write(data);
+            }
+            if (conn.getResponseCode() == 200) {
+                prefs.edit().putString("last_synced", raw).apply();
+            }
+            conn.disconnect();
+        } catch (Throwable ignored) {
+        }
     }
 
     private static boolean isGameProcessRunning(Context ctx, String pkg) {
